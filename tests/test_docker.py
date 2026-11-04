@@ -12,6 +12,19 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class DockerTests(unittest.TestCase):
+    def test_alpine_multistage_image_keeps_build_tools_out_of_runtime(self):
+        dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("FROM python:3.13-alpine AS builder", dockerfile)
+        self.assertIn("FROM python:3.13-alpine AS runtime", dockerfile)
+        builder, runtime = dockerfile.split("FROM python:3.13-alpine AS runtime", 1)
+        self.assertIn("apk add --no-cache build-base linux-headers", builder)
+        self.assertIn("--prefix=/install", builder)
+        self.assertIn("COPY --from=builder /install/ /usr/local/", runtime)
+        self.assertNotIn("apk add", runtime)
+        self.assertNotIn("pip install", runtime)
+        self.assertIn("USER 65534:65534", runtime)
+        self.assertIn('"gunicorn"', runtime)
+
     @unittest.skipUnless(shutil.which("docker"), "Docker CLI is not installed")
     def test_compose_linux_and_desktop_network_modes(self):
         env = dict(os.environ)
