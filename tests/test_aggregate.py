@@ -89,7 +89,7 @@ class AggregateTests(unittest.TestCase):
         self.assertEqual(skin["Background"]["UpdateDivider"], "-1")
         self.assertEqual(skin["TextStyle"]["DynamicVariables"], "0")
         self.assertEqual(skin["TextStyle"]["UpdateDivider"], "-1")
-        self.assertEqual(skin["VM1CPUValue"]["UpdateDivider"], "1")
+        self.assertEqual(skin["VM1CPUValue"]["UpdateDivider"], "2")
         self.assertEqual(skin["VM1CPUGraph"]["UpdateDivider"], "2")
 
     def test_cpu_and_ram_graphs_are_fixed_size_native_meters(self):
@@ -237,6 +237,21 @@ class AggregateTests(unittest.TestCase):
                 for suffix in ("CPUGraph", "CPUGraphFill", "RAMGraph", "RAMGraphFill",
                                "NetGraph", "DiskIOGraph", "DiskIOGraphFill"):
                     self.assertEqual(skin[prefix+suffix]["UpdateDivider"], str(interval))
+
+    def test_values_and_graphs_share_the_same_update_tick(self):
+        for interval in (1, 2, 5, 60):
+            config = configuration(20)
+            config["update_seconds"] = interval
+            skin = parse(config)
+            for i in (1, 10, 11, 20):
+                prefix = f"VM{i}"
+                for value, graph in (("CPUValue", "CPUGraph"), ("RAMValue", "RAMGraph"),
+                                     ("NetValue", "NetGraph"), ("DiskIO", "DiskIOGraph"),
+                                     ("DiskDetail", "DiskPie")):
+                    self.assertEqual(skin[prefix+value]["UpdateDivider"], str(interval))
+                    self.assertEqual(skin[prefix+value]["UpdateDivider"],
+                                     skin[prefix+graph]["UpdateDivider"])
+                    self.assertNotIn("OnUpdateAction", skin[prefix+value])
 
     def test_network_adaptive_unit_thresholds_and_round_trip(self):
         skin = parse(configuration())

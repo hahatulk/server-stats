@@ -65,7 +65,7 @@ File `ServerStats/@Resources/Aggregate/servers.json` (UTF-8, without comments):
 
 - `host_title` — heading, not an address for polling a hypervisor. Its metrics are not requested.
 - `scale` — scale for all sizes and fonts, from 0.6 to 2.0.
-- `update_seconds` — HTTP polling and graph-sampling interval for an available VM, from 1 to 3600 seconds. CPU, RAM, NETWORK, and disk-I/O graphs add a point at this interval (2 seconds by default), not on every 1-second Rainmeter tick. After an error, polling repeats no more than once per `max(30, update_seconds)` seconds; after recovery, the normal frequency returns.
+- `update_seconds` — HTTP polling and graph-sampling interval for an available VM, from 1 to 3600 seconds. CPU, RAM, NETWORK, and disk-I/O graphs add a point at this interval (2 seconds by default), not on every 1-second Rainmeter tick. Metric values and the disk pie chart use the same update divider, so the displayed numbers and graph points refresh on the same tick. After an error, polling repeats no more than once per `max(30, update_seconds)` seconds; after recovery, the normal frequency returns.
 - `id` — unique identifier: Latin letters, digits, `_`, `-`.
 - `address` — IPv4/IPv6 address or DNS name. To display an IP specifically, enter an IP; a DNS name is not automatically converted to an IP.
 - `port` — agent port; default 5000.

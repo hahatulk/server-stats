@@ -204,7 +204,7 @@ def render(config, slots=None, shared=False):
         text(p+"Address", f"#{p}Address#" if shared else address, 24, y+24, 140, FontColor="178,178,178", FontSize=px(8))
         text(p+"Offline", "Waiting / unavailable · check agent version", 176, y+15, 610, FontColor="200,125,105")
         def data(name, value, x, yy, w, **opts):
-            text(p+name, value, x, yy, w, Group=group, Hidden=1, UpdateDivider=1, StringAlign="Center", **opts)
+            text(p+name, value, x, yy, w, Group=group, Hidden=1, UpdateDivider=graph_update_divider, StringAlign="Center", **opts)
         data("CPUValue", "%1%", 176, y+3, 48, MeasureName=p+"CPU", NumOfDecimals=0, FontColor="178,178,178")
         data("RAMValue", f"%1 / %2 GB ([{p}RAM:0]%)", 236, y+3, 148,
              MeasureName=p+"RAMUsed", MeasureName2=p+"RAMTotal", NumOfDecimals=1, FontSize=px(9), FontColor="178,178,178", DynamicVariables=1,
@@ -244,7 +244,7 @@ def render(config, slots=None, shared=False):
                 Shape=f"Ellipse {px(755)},{px(y+22)},{px(15)} | Fill Color 255,255,255,28 | StrokeWidth 0")
         section(p+"DiskPie", Meter="Roundline", MeasureName=p+"Disk", X=px(739), Y=px(y+6), W=px(32), H=px(32),
                 StartAngle="(Rad(270))", RotationAngle="(Rad(360))", LineStart=0, LineLength=px(15),
-                Solid=1, LineColor="#DiskColor#", AntiAlias=1, UpdateDivider=1, Group=group, Hidden=1,
+                Solid=1, LineColor="#DiskColor#", AntiAlias=1, UpdateDivider=graph_update_divider, Group=group, Hidden=1,
                 DynamicVariables=1, ToolTipText=f"Used: [{p}DiskUsed] / [{p}DiskTotal] GB ([{p}Disk:0]%)")
         # I/O is throughput, not disk-space percentage: use an autoscaled sum.
         disk_graph = dict(MeasureName=p+"DiskTotalIO", X=px(553), Y=px(y+24), W=px(134), H=px(36),
