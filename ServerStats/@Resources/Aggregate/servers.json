@@ -1,0 +1,17 @@
+{
+  "host_title": "HYPERVISOR-01",
+  "scale": 1.0,
+  "update_seconds": 2,
+  "servers": [
+    {"id": "vm01", "address": "192.168.1.101", "name": "vm-01", "port": 5000, "enabled": true},
+    {"id": "vm02", "address": "192.168.1.102", "name": "vm-02", "port": 5000, "enabled": true},
+    {"id": "vm03", "address": "192.168.1.103", "name": "vm-03", "port": 5000, "enabled": true},
+    {"id": "vm04", "address": "192.168.1.104", "name": "vm-04", "port": 5000, "enabled": true},
+    {"id": "vm05", "address": "192.168.1.105", "name": "vm-05", "port": 5000, "enabled": true},
+    {"id": "vm06", "address": "192.168.1.106", "name": "vm-06", "port": 5000, "enabled": true},
+    {"id": "vm07", "address": "192.168.1.107", "name": "vm-07", "port": 5000, "enabled": true},
+    {"id": "vm08", "address": "192.168.1.108", "name": "vm-08", "port": 5000, "enabled": true},
+    {"id": "vm09", "address": "192.168.1.109", "name": "vm-09", "port": 5000, "enabled": true},
+    {"id": "vm10", "address": "192.168.1.110", "name": "vm-10", "port": 5000, "enabled": true}
+  ]
+}

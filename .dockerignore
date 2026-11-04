@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!requirements.txt
+!requirements-docker.txt
+!server_stats.py
+!gunicorn.conf.py

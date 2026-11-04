@@ -1,0 +1,67 @@
+# One file, two deployment modes (run only one at a time):
+# Docker Desktop (default): docker compose up -d --build
+# Linux VM:                docker compose up -d --build server-stats-linux
+# Explicit Linux service selection auto-enables its profile, without Desktop.
+# Desktop metrics describe its Linux VM, not Windows. Use EXE on Windows.
+x-server-stats: &server-stats
+  build: .
+  image: server-stats:local
+  restart: unless-stopped
+  uts: host
+  environment: &stats-environment
+    SERVER_STATS_HOST: "${SERVER_STATS_HOST:-0.0.0.0}"
+    SERVER_STATS_PORT: "${SERVER_STATS_PORT:-5000}"
+    SERVER_STATS_PROCFS: /host/proc
+    # Inside-container path: /host/root/data monitors the host's /data FS.
+    SERVER_STATS_DISK: "${SERVER_STATS_DISK:-/host/root}"
+  volumes:
+    - type: bind
+      source: /proc
+      target: /host/proc
+      read_only: true
+    - type: bind
+      source: /sys
+      target: /sys
+      read_only: true
+    - type: bind
+      source: /
+      target: /host/root
+      read_only: true
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+  healthcheck:
+    test:
+      - CMD
+      - python
+      - -c
+      - "import json,os,urllib.request; p=os.environ.get('SERVER_STATS_PORT','5000'); h=os.environ.get('SERVER_STATS_HOST','0.0.0.0'); h='127.0.0.1' if h=='0.0.0.0' else h; d=json.load(urllib.request.urlopen('http://'+h+':'+p+'/api/stats',timeout=3)); assert d['hostname'] and d['ram_total_gb']>0 and d['disk_total_gb']>0"
+    interval: 30s
+    timeout: 5s
+    start_period: 10s
+    retries: 3
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "2"
+
+services:
+  server-stats-linux:
+    <<: *server-stats
+    profiles: [linux]
+    # Native Linux: host NIC counters, port directly on the VM.
+    network_mode: host
+
+  server-stats:
+    <<: *server-stats
+    network_mode: bridge
+    environment:
+      <<: *stats-environment
+      SERVER_STATS_HOST: "0.0.0.0"
+    ports:
+      - "${SERVER_STATS_PUBLISH_HOST:-127.0.0.1}:${SERVER_STATS_PUBLISH_PORT:-5000}:${SERVER_STATS_PORT:-5000}"

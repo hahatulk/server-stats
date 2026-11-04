@@ -1,0 +1,11 @@
+{
+  "host_title": "DEMO · 10 / 50 / 80 / 100%",
+  "scale": 1.0,
+  "update_seconds": 2,
+  "servers": [
+    {"id": "demo10", "address": "127.0.0.1", "port": 5000, "name": "DEMO-10", "enabled": true, "demo_load": 10},
+    {"id": "demo50", "address": "127.0.0.1", "port": 5000, "name": "DEMO-50", "enabled": true, "demo_load": 50},
+    {"id": "demo80", "address": "127.0.0.1", "port": 5000, "name": "DEMO-80", "enabled": true, "demo_load": 80},
+    {"id": "demo100", "address": "127.0.0.1", "port": 5000, "name": "DEMO-100", "enabled": true, "demo_load": 100}
+  ]
+}
