@@ -1,55 +1,55 @@
-# ServerStats — компактный монитор виртуалок для Rainmeter
+# ServerStats — compact VM monitor for Rainmeter
 
-**Описание проекта, история доработок и ориентир для веб-раздела:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+**Project description, change history, and web-section reference:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
-Старый одиночный скин `ServerStats/ServerStats_Win10.ini` сохранён. Агрегированный виджет доступен в **20 готовых вариантах**: `ServerStats/Aggregate/Aggregate-01.ini` … `Aggregate-20.ini` (от 1 до 20 строк). Дополнительно оставлен `Aggregate.ini` с автоматическим размером по всему списку.
+The old standalone skin `ServerStats/ServerStats_Win10.ini` is preserved. The aggregated widget is available in **20 ready-made variants**: `ServerStats/Aggregate/Aggregate-01.ini` … `Aggregate-20.ini` (from 1 to 20 rows). `Aggregate.ini`, which sizes itself automatically for the entire list, is also included.
 
-## Что показывает новый виджет
+## What the new widget shows
 
-- Вверху — имя физического хоста / гипервизора, задаваемое в `host_title`.
-- Каждая строка — hostname из агента, адрес подключения, ЦП в %, сеть ↓ приём / ↑ отправка в Мбит/с, ОЗУ компактно в формате `3.2 / 8.0 GB (40%)`, диск в формате `128.0 / 256.0 GB` (без отдельного процента), а также дисковый I/O: **R — чтение / W — запись в МБ/с**.
-- Почти непрозрачный тёмный фон `12,12,12,250`, скругление, Segoe UI; синий ЦП, фиолетовая память, оранжевая сеть, зелёный диск. Под ЦП и ОЗУ — графики высотой **36 px** в стиле Win10 Widgets RU 2.0: линия, полупрозрачная заливка и рамка, с фиксированной шкалой 0–100%. Высота строки — 88 px. Столбец hostname/IP сужен до 140 px; полное имя доступно в подсказке. Колонка сети расширена до 146 px для строки `↓1000.0 ↑1000.0 Мбит/с` при шрифте 9: приём и отправка стоят в одной строке через пробел, например `↓12.3 ↑1.2 Мбит/с`. Единицы автоматически выбираются по большей из двух скоростей: **Кбит/с** ниже 1 Мбит/с, **Мбит/с** от 1 до 1000 Мбит/с, **Гбит/с** от 1000 Мбит/с. Используется десятичное преобразование: 1000 Кбит/с = 1 Мбит/с, 1000 Мбит/с = 1 Гбит/с. При снижении скорости единицы переключаются обратно; при нуле показывается Кбит/с.
-- Сетевой график высотой 36 px имеет две линии в цветах download/upload и общую автоматическую шкалу. История хранится в исходных Мбит/с, независимо от отображаемых единиц: переключение Кбит/с ↔ Мбит/с ↔ Гбит/с не искажает прошлые точки. Подпись и подсказки используют выбранные единицы.
-- Дисковый блок разделён: **слева** цветные скорости R/W и зелёный график суммарного I/O (чтение + запись в МБ/с), **справа от графика** круговая диаграмма заполнения, под ней — занятый/общий объём. Единицы стоят возле значений, а не в заголовках: объём — `128.0 / 256.0 GB`, скорости — `R 12.5 W 3.2 MB/s`. Поле объёма диска расширено до 130 px. Значения и подписи колонок отцентрированы относительно своих графиков; hostname/IP остаётся слева. Обозначение GB — визуальная подпись, объёмы по-прежнему рассчитываются агентом в 1024³ байт. График I/O имеет высоту **36 px**, автомасштаб и выровнен с графиками ЦП, ОЗУ и сети; текущая сумма видна в подсказке. История всех графиков ограничена их шириной и не накапливается бесконечно.
-- В дисковом I/O `R` (чтение) окрашено как сетевой download, `W` (запись) — как upload. Цвета заданы общими переменными `DownloadColor` и `UploadColor` генератора; при предупреждении оба значения временно становятся красными.
-- Все значения ЦП, ОЗУ, сети, объёма диска и скоростей R/W имеют единый размер шрифта **9** при масштабе 1.0. Значения ЦП и ОЗУ, включая процент в скобках, в обычном состоянии серые (`178,178,178`), как занятый объём диска.
-- При **ЦП ≥ 80%**, **ОЗУ ≥ 80%** или **занятом месте на диске ≥ 80%** соответствующие числовые значения становятся красными. У диска краснеют круговая диаграмма, объём и значения I/O (сам график I/O остаётся зелёным), но порог проверяется по занятому месту, не по МБ/с. Ниже 80% обычный цвет восстанавливается. Порог сравнивается с исходным значением до округления.
-- Зелёная точка — данные получены; серая — ожидание; красная — ошибка подключения или неподходящая версия агента. При ошибке числовые показатели скрываются, а не остаются «живыми» старыми значениями. Обнаружение ошибки зависит от сетевого тайм-аута WebParser.
+- At the top: the physical host / hypervisor name configured by `host_title`.
+- Each row contains the agent hostname, connection address, CPU in %, network ↓ receive / ↑ send in Mbit/s, compact RAM in the format `3.2 / 8.0 GB (40%)`, disk in the format `128.0 / 256.0 GB` (without a separate percentage), and disk I/O: **R — read / W — write in MB/s**.
+- Nearly opaque dark background `12,12,12,250`, rounded corners, Segoe UI; blue CPU, purple RAM, orange NETWORK, green DISK. Under CPU and RAM are **36 px** graphs in Win10 Widgets RU 2.0 style: line, translucent fill, and border, with a fixed 0–100% scale. Row height is 88 px. The hostname/IP column is narrowed to 140 px; the full name is available in the tooltip. The NETWORK column is widened to 146 px for the line `↓1000.0 ↑1000.0 Mbit/s` at font size 9: receive and send appear on one line separated by a space, for example `↓12.3 ↑1.2 Mbit/s`. Units are selected automatically according to the larger of the two speeds: **Kbit/s** below 1 Mbit/s, **Mbit/s** from 1 to 1000 Mbit/s, and **Gbit/s** from 1000 Mbit/s. Decimal conversion is used: 1000 Kbit/s = 1 Mbit/s, 1000 Mbit/s = 1 Gbit/s. When speed decreases, units switch back; at zero, Kbit/s is shown.
+- The 36 px NETWORK graph has two lines in download/upload colors and one shared automatic scale. History is stored in source Mbit/s regardless of displayed units: switching Kbit/s ↔ Mbit/s ↔ Gbit/s does not distort earlier points. The label and tooltips use the selected units.
+- The DISK block is split: **on the left**, colored R/W speeds and a green total-I/O graph (read + write in MB/s); **to the right of the graph**, a pie chart of usage, with used/total capacity below it. Units appear next to values, not in headings: capacity — `128.0 / 256.0 GB`, speeds — `R 12.5 W 3.2 MB/s`. The disk-capacity field is widened to 130 px. Values and column labels are centered relative to their graphs; hostname/IP remains on the left. GB is a visual label; capacities are still calculated by the agent in 1024³ bytes. The I/O graph is **36 px** high, auto-scaled, and aligned with the CPU, RAM, and NETWORK graphs; the current total is shown in the tooltip. All graph histories are limited by their widths and do not grow indefinitely.
+- In disk I/O, `R` (read) uses the NETWORK download color and `W` (write) uses the upload color. Colors are controlled by the generator's shared `DownloadColor` and `UploadColor` variables; during a warning both values temporarily become red.
+- All CPU, RAM, NETWORK, disk-capacity, and R/W-speed values use font size **9** at scale 1.0. CPU and RAM values, including the percentage in parentheses, are gray (`178,178,178`) in normal state, as is used disk capacity.
+- At **CPU ≥ 80%**, **RAM ≥ 80%**, or **disk usage ≥ 80%**, the corresponding numeric values turn red. For DISK, the pie chart, capacity, and I/O values turn red (the I/O graph remains green), but the threshold is checked against usage, not MB/s. Below 80%, the normal color returns. The threshold is compared with the original value before rounding.
+- A green dot means data was received; gray means waiting; red means a connection error or an incompatible agent version. On error, numeric indicators are hidden instead of remaining as stale “live” values. Error detection depends on the WebParser network timeout.
 
-**Все варианты используют один конфиг** `@Resources/Aggregate/servers.json`. Генератор создаёт из него общий `servers.inc`, который подключается каждым вариантом: IP, порты, резервные имена и имя хоста не дублируются в 20 файлах. Редактировать нужно только JSON, не `servers.inc` и не сгенерированные INI.
+**All variants use one configuration file:** `@Resources/Aggregate/servers.json`. The generator creates a shared `servers.inc` from it, and every variant includes that file: IPs, ports, fallback names, and the host name are not duplicated across 20 files. Edit only the JSON, not `servers.inc` or generated INIs.
 
-Вариант `Aggregate-NN.ini` показывает первые NN **включённых** машин из общего списка. Если машин меньше, оставшиеся строки отображают «не настроено» и не делают сетевых запросов. Если больше — лишние машины не отображаются и не опрашиваются этим вариантом: выберите больший. Порядок соответствует JSON; `enabled: false` исключает запись из нумерации.
+`Aggregate-NN.ini` shows the first NN **enabled** machines from the shared list. If there are fewer machines, remaining rows show “not configured” and make no network requests. If there are more, extra machines are not displayed or queried by that variant: choose a larger one. Order follows the JSON; `enabled: false` removes an entry from numbering.
 
-После добавления машины сохраните общий JSON, нажмите **«обновить»** (или запустите `rebuild_aggregate.cmd`), затем выберите скин с нужным числом строк. Пересборка сразу обновляет **все 20 вариантов**, а также автоматический `Aggregate.ini`. Изменение JSON само по себе без пересборки не применяется.
+After adding a machine, save the shared JSON, click **refresh** (or run `rebuild_aggregate.cmd`), then select the skin with the required number of rows. Rebuilding immediately updates **all 20 variants** and automatic `Aggregate.ini`. Changing JSON alone has no effect until rebuilding.
 
-Все 20 вариантов лежат в одной конфигурации `ServerStats → Aggregate`, поэтому загрузка другого варианта заменяет предыдущий, не запуская параллельно 20 наборов опроса. Автоматический `Aggregate.ini` показывает все включённые машины без ограничения в 20 строк. Живой resize мышью не реализован.
+All 20 variants are in one configuration, `ServerStats → Aggregate`, so loading another variant replaces the previous one rather than running 20 polling sets in parallel. Automatic `Aggregate.ini` shows all enabled machines without the 20-row limit. Live resizing with the mouse is not implemented.
 
-**Расположение списка:** до 10 мест — одна колонка. Начиная с варианта на **11 мест**, появляются две колонки: VM 1–10 слева, VM 11–20 справа. Все данные строки, графики, круговая диаграмма и статусы перемещаются вместе. Над каждой колонкой повторяются заголовки показателей; между колонками — разделитель. Имя хоста и кнопки остаются общей шапкой. У автоматического `Aggregate.ini` второй столбец включается при 11 активных машинах; если их больше 20, правая колонка продолжается вниз.
+**List layout:** up to 10 slots use one column. Starting with the **11-slot** variant, two columns appear: VMs 1–10 on the left and VMs 11–20 on the right. All row data, graphs, pie chart, and statuses move together. Metric headings repeat above each column; a divider separates the columns. The host name and buttons remain in the shared header. In automatic `Aggregate.ini`, the second column is enabled at 11 active machines; if there are more than 20, the right column continues downward.
 
-При масштабе 1.0 размер для 10 мест приблизительно **828 × 952 px**, для 11–20 — **1672 × 952 px**. Чтобы уменьшить виджет под экран, измените общий `scale` и пересоберите варианты.
+At scale 1.0, size for 10 slots is approximately **828 × 952 px**, and for 11–20 slots **1672 × 952 px**. To fit the widget to the screen, change the shared `scale` and rebuild the variants.
 
-## Быстрый запуск
+## Quick start
 
-1. **Запустите агент на каждой виртуалке.** На **Windows** используйте `server_stats.exe` из корня проекта. На **Linux** — Docker Compose (инструкция ниже). Для разработки также можно запустить Python-версию:
+1. **Run the agent on every VM.** On **Windows**, use `server_stats.exe` from the project root. On **Linux**, use Docker Compose (instructions below). For development, the Python version can also be run:
    ```powershell
    py -m pip install -r requirements.txt
    py server_stats.py
    ```
-   Старый EXE без hostname/диска/I/O для нового скина не подходит. Порт по умолчанию — TCP 5000. Проверка: `http://IP-ВМ:5000/stats`.
-2. Скопируйте **всю папку `ServerStats`** в каталог скинов Rainmeter (обычно `Документы\Rainmeter\Skins`). Для удобства открывайте каталог через Rainmeter → Manage / Управление → Open folder / Открыть папку.
-3. На компьютере с Rainmeter установите **Python 3.9+ с Python Launcher (`py.exe`)**. Готовый INI можно загрузить без Python, но он нужен для добавления/удаления машин и изменения масштаба. Генератор не требует Flask или psutil.
-4. В **скопированной папке** откройте `@Resources/Aggregate/servers.json`:
-   - замените `HYPERVISOR-01` на имя вашего хоста;
-   - замените десять демонстрационных адресов `192.168.1.101`–`192.168.1.110` на реальные;
-   - добавьте/удалите нужные записи.
-5. Запустите `ServerStats/rebuild_aggregate.cmd`. Либо выполните команду ниже из папки `ServerStats`.
-6. В Rainmeter нажмите **Refresh all / Обновить всё**, затем загрузите, например, `ServerStats → Aggregate → Aggregate-10.ini`. В этой же папке доступны `Aggregate-01.ini` … `Aggregate-20.ini` и автоматический `Aggregate.ini`. При последующих пересборках скин обновляется автоматически, если Rainmeter найден в PATH или стандартном `Program Files`.
+   The old EXE without hostname/disk/I/O is not suitable for the new skin. Default port is TCP 5000. Check: `http://VM-IP:5000/stats`.
+2. Copy the **entire `ServerStats` folder** to the Rainmeter skins directory (usually `Documents\Rainmeter\Skins`). For convenience, open the directory through Rainmeter → Manage → Open folder.
+3. On the Rainmeter computer, install **Python 3.9+ with Python Launcher (`py.exe`)**. A ready INI can be loaded without Python, but Python is required to add/remove machines and change scale. The generator does not require Flask or psutil.
+4. In the **copied folder**, open `@Resources/Aggregate/servers.json`:
+   - replace `HYPERVISOR-01` with your host name;
+   - replace the ten demo addresses `192.168.1.101`–`192.168.1.110` with real ones;
+   - add/remove the required entries.
+5. Run `ServerStats/rebuild_aggregate.cmd`, or execute the command below from the `ServerStats` folder.
+6. In Rainmeter, click **Refresh all**, then load, for example, `ServerStats → Aggregate → Aggregate-10.ini`. The same folder contains `Aggregate-01.ini` … `Aggregate-20.ini` and automatic `Aggregate.ini`. After later rebuilds, the skin updates automatically if Rainmeter is found in PATH or in standard `Program Files`.
 
-**Не редактируйте сгенерированные `Aggregate*.ini` и `servers.inc`**: изменения будут перезаписаны. Если после копирования вы продолжаете редактировать исходную папку проекта, установленный скин не изменится — настраивать надо именно копию в `Skins`.
+**Do not edit generated `Aggregate*.ini` or `servers.inc`**: changes will be overwritten. If you keep editing the original project folder after copying, the installed skin will not change — configure the copy in `Skins`.
 
-## Конфигурация
+## Configuration
 
-Файл `ServerStats/@Resources/Aggregate/servers.json` (UTF-8, без комментариев):
+File `ServerStats/@Resources/Aggregate/servers.json` (UTF-8, without comments):
 
 ```json
 {
@@ -63,48 +63,48 @@
 }
 ```
 
-- `host_title` — заголовок, не адрес для опроса гипервизора. Его показатели не запрашиваются.
-- `scale` — масштаб всех размеров и шрифтов, от 0.6 до 2.0.
-- `update_seconds` — период HTTP-опроса доступной виртуалки, от 1 до 3600 секунд. После ошибки повторный опрос — не чаще одного раза в `max(30, update_seconds)` секунд; после восстановления возвращается обычная частота.
-- `id` — уникальный идентификатор: латинские буквы, цифры, `_`, `-`.
-- `address` — IP (IPv4/IPv6) или DNS-имя. Для отображения именно IP укажите IP, DNS-имя автоматически не преобразуется в IP.
-- `port` — порт агента; по умолчанию 5000.
-- `name` — резервное имя до получения hostname. После успешного опроса отображается **реальный hostname виртуалки**.
-- `enabled: false` — убрать машину из виджета, сохранив её настройки.
-- Порядок строк соответствует порядку включённых записей в `servers`. Пустой список поддерживается. В фиксированных вариантах есть 1–20 мест; автоматический `Aggregate.ini` не имеет ограничения в 20 машин.
+- `host_title` — heading, not an address for polling a hypervisor. Its metrics are not requested.
+- `scale` — scale for all sizes and fonts, from 0.6 to 2.0.
+- `update_seconds` — HTTP polling and graph-sampling interval for an available VM, from 1 to 3600 seconds. CPU, RAM, NETWORK, and disk-I/O graphs add a point at this interval (2 seconds by default), not on every 1-second Rainmeter tick. After an error, polling repeats no more than once per `max(30, update_seconds)` seconds; after recovery, the normal frequency returns.
+- `id` — unique identifier: Latin letters, digits, `_`, `-`.
+- `address` — IPv4/IPv6 address or DNS name. To display an IP specifically, enter an IP; a DNS name is not automatically converted to an IP.
+- `port` — agent port; default 5000.
+- `name` — fallback name until hostname is received. After a successful poll, the **actual VM hostname** is displayed.
+- `enabled: false` — remove a machine from the widget while preserving its settings.
+- Row order follows the order of enabled entries in `servers`. An empty list is supported. Fixed variants have 1–20 slots; automatic `Aggregate.ini` has no 20-machine limit.
 
-После сохранения нажмите **«обновить»** в шапке виджета. Кнопка **«список»** открывает JSON в Блокноте. Те же команды доступны в контекстном меню скина. Автоматического наблюдения за JSON нет.
+After saving, click **refresh** in the widget header. The **list** button opens the JSON in Notepad. The same commands are available in the skin context menu. JSON is not watched automatically.
 
-### Команды добавления/удаления
+### Add/remove commands
 
-Из **установленной** папки `ServerStats`:
+From the **installed** `ServerStats` folder:
 
 ```powershell
-# Пересобрать и обновить активный скин
+# Rebuild and refresh the active skin
 py "@Resources\Aggregate\generate.py" --refresh
 
-# Добавить машину и сразу изменить размер виджета
+# Add a machine and immediately change widget size
 py "@Resources\Aggregate\generate.py" --refresh add 192.168.1.25 --id vm25 --name vm-25 --port 5000
 
-# Удалить по id
+# Remove by id
 py "@Resources\Aggregate\generate.py" --refresh remove vm25
 
-# Список всех записей, включая отключённые
+# List all entries, including disabled ones
 py "@Resources\Aggregate\generate.py" list
 ```
 
-При ошибке в JSON существующий INI не перезаписывается. Сообщение об ошибке удобно увидеть, запустив команду в терминале либо `rebuild_aggregate.cmd`. Если Rainmeter установлен в нестандартном каталоге, обновите скин вручную или добавьте каталог с `Rainmeter.exe` в PATH.
+On JSON errors, the existing INI is not overwritten. To see the error conveniently, run the command in a terminal or run `rebuild_aggregate.cmd`. If Rainmeter is installed in a non-standard directory, refresh the skin manually or add the directory containing `Rainmeter.exe` to PATH.
 
-## Linux: запуск агента в Docker
+## Linux: running the agent in Docker
 
-Контейнер запускается **на каждой наблюдаемой Linux-виртуалке**. Требуются Docker Engine и плагин Docker Compose. В одном `compose.yaml` есть два сервиса: **server-stats** для Docker Desktop (запускается по умолчанию) и **server-stats-linux** для обычного Linux Docker Engine. Rootless Docker для мониторинга хоста не поддерживается. На Linux явно указывайте имя сервиса: это включает его профиль и не запускает Desktop-сервис. `.env` для выбора режима не нужен; не задавайте `COMPOSE_PROFILES=linux` вместе с обычным `up`, иначе будут выбраны оба сервиса.
+The container runs **on every monitored Linux VM**. Docker Engine and the Docker Compose plugin are required. One `compose.yaml` contains two services: **server-stats** for Docker Desktop (started by default) and **server-stats-linux** for the regular Linux Docker Engine. Rootless Docker is not supported for host monitoring. On Linux, explicitly specify the service name: this enables its profile and does not start the Desktop service. No `.env` is needed to select the mode; do not set `COMPOSE_PROFILES=linux` together with normal `up`, or both services will be selected.
 
-Из корня проекта на Linux:
+From the project root on Linux:
 
 ```bash
-# Необязательно: настройте адрес прослушивания, порт и файловую систему
+# Optional: configure listening address, port, and filesystem
 cp docker.env.example .env
-# Отредактируйте .env при необходимости
+# Edit .env if needed
 
 docker compose up -d --build server-stats-linux
 docker compose ps
@@ -112,17 +112,17 @@ curl http://127.0.0.1:5000/stats
 curl http://127.0.0.1:5000/api/stats
 ```
 
-Если Docker требует повышенных прав, выполняйте команды с `sudo`. В `servers.json` на компьютере с Rainmeter укажите IP **Linux-виртуалки** и порт агента — формат данных тот же, что у Windows EXE. Если задали в `.env` конкретный `SERVER_STATS_HOST`, проверяйте этот адрес вместо `127.0.0.1`.
+If Docker requires elevated privileges, run commands with `sudo`. In `servers.json` on the Rainmeter computer, specify the **Linux VM** IP and agent port — the data format is the same as for the Windows EXE. If a specific `SERVER_STATS_HOST` was set in `.env`, check that address instead of `127.0.0.1`.
 
-### Какие метрики собираются
+### Metrics collected
 
-- `/proc` хоста монтируется только для чтения в `/host/proc`; `SERVER_STATS_PROCFS` направляет psutil на эти данные. ЦП и ОЗУ относятся к виртуалке, а не к лимитам контейнера.
-- `network_mode: host` позволяет измерять трафик интерфейсов виртуалки. Секция `ports` не нужна: сервер сразу слушает порт на хосте.
-- `uts: host` позволяет возвращать реальный hostname виртуалки.
-- `/sys` подключается только для чтения для информации об устройствах и дисковых счётчиках.
-- `/` хоста подключается в `/host/root` только для чтения. По умолчанию показывается заполнение корневой файловой системы виртуалки, не файловой системы образа контейнера. I/O суммируется по дискам, возвращаемым psutil.
+- The host `/proc` is mounted read-only at `/host/proc`; `SERVER_STATS_PROCFS` directs psutil to this data. CPU and RAM refer to the VM, not container limits.
+- `network_mode: host` measures VM interface traffic. No `ports` section is needed: the server listens directly on the host port.
+- `uts: host` returns the real VM hostname.
+- `/sys` is connected read-only for device information and disk counters.
+- The host `/` is mounted read-only at `/host/root`. By default, usage of the VM root filesystem, not the container image filesystem, is shown. I/O is summed across disks returned by psutil.
 
-Для отображения занятого места на разделе `/data` укажите в `.env`:
+To show usage of the `/data` partition, set in `.env`:
 
 ```dotenv
 SERVER_STATS_HOST=0.0.0.0
@@ -130,41 +130,41 @@ SERVER_STATS_PORT=5000
 SERVER_STATS_DISK=/host/root/data
 ```
 
-Путь задаётся **внутри контейнера**. Для `/` используйте `/host/root`, для `/mnt/storage` — `/host/root/mnt/storage`. Отдельный раздел должен быть смонтирован на Linux-хосте до запуска контейнера; после изменения монтирования пересоздайте контейнер. Значения с пробелами в `.env` заключайте в кавычки.
+The path is specified **inside the container**. For `/`, use `/host/root`; for `/mnt/storage`, use `/host/root/mnt/storage`. A separate partition must be mounted on the Linux host before starting the container; recreate the container after changing mounts. Quote values containing spaces in `.env`.
 
 ```bash
-# Применить изменения .env
+# Apply .env changes
 docker compose up -d --force-recreate server-stats-linux
 
-# Обновить агент после изменения исходников / зависимостей
+# Update the agent after changing source/dependencies
 docker compose up -d --build server-stats-linux
 
-# Логи и остановка
+# Logs and shutdown
 docker compose --profile linux logs --tail=100 -f server-stats-linux
 docker compose --profile linux down
 ```
 
-В Docker используется **Gunicorn: один worker, четыре HTTP-потока и отдельный поток сбора раз в секунду**. Контейнер автоматически запускается после перезапуска Docker (`unless-stopped`), имеет healthcheck и ограничение размера логов. Статус `unhealthy` сам по себе не перезапускает контейнер: проверьте логи и права доступа к метрикам/диску.
+Docker uses **Gunicorn: one worker, four HTTP threads, and a separate collection thread running once per second**. The container starts automatically after Docker restarts (`unless-stopped`), has a healthcheck, and limits log size. `unhealthy` alone does not restart the container: check logs and access permissions for metrics/disk.
 
-**Безопасность:** контейнер работает от непривилегированного UID 65534, без capabilities, без Docker socket и без `privileged`. Однако bind-mount корня хоста и `/proc` предоставляет доступ на чтение к доступным этому UID данным хоста — это осознанный компромисс для мониторинга. Не используйте этот образ для недоверенного кода. При строгих политиках SELinux/AppArmor доступ может быть запрещён: настройте разрешения, не отключая защиту целиком и не добавляя `:Z` к системным каталогам `/`, `/proc`, `/sys`.
+**Security:** the container runs as unprivileged UID 65534, without capabilities, Docker socket, or `privileged`. However, bind-mounting the host root and `/proc` grants read access to host data available to this UID — an intentional monitoring compromise. Do not use this image for untrusted code. Strict SELinux/AppArmor policies may deny access: configure permissions without disabling protection entirely and without adding `:Z` to system directories `/`, `/proc`, `/sys`.
 
-В режиме host networking порт не защищён изоляцией Docker. Ограничьте входящий TCP 5000 (или свой порт) на самой виртуалке адресом компьютера с Rainmeter. TLS и аутентификации у агента нет.
+With host networking, the port is not protected by Docker isolation. Restrict incoming TCP 5000 (or your port) on the VM itself to the Rainmeter computer's address. The agent has no TLS or authentication.
 
-**Windows:** Docker не нужен; запуск `server_stats.exe` и параметры окружения остаются прежними.
+**Windows:** Docker is not required; starting `server_stats.exe` and environment parameters remain unchanged.
 
-### Обновление точности сетевых скоростей
+### Updating network-speed precision
 
-Для корректного отображения малого трафика в Кбит/с обновите и агент: прежняя версия округляла сеть до 0.1 Мбит/с (100 Кбит/с), и эти потерянные значения скин восстановить не может. Новая версия сохраняет шесть десятичных знаков Мбит/с; `/stats` отдаёт их обычной десятичной записью, совместимой с WebParser. Формат полей не изменился.
+For correct display of small traffic in Kbit/s, update the agent as well: the previous version rounded NETWORK to 0.1 Mbit/s (100 Kbit/s), and the skin cannot restore those lost values. The new version preserves six decimal places of Mbit/s; `/stats` returns them in ordinary decimal notation compatible with WebParser. Field format is unchanged.
 
-- **Windows:** новая сборка с повышенной точностью находится в **`server_stats_updated.exe`** (также в `dist/server_stats.exe`). Текущий корневой `server_stats.exe` был занят запущенным процессом и не перезаписан. Остановите старый агент, замените его новой сборкой (при необходимости переименуйте в `server_stats.exe`) и запустите снова. Автоматически останавливать работающий агент обновление не пытается.
-- **Linux Docker:** обновите исходники на виртуалке и выполните `docker compose up -d --build server-stats-linux`.
-- **Rainmeter:** обновите `@Resources/Aggregate/generate.py`, сохраните свой JSON и запустите `rebuild_aggregate.cmd`.
+- **Windows:** the higher-precision build is **`server_stats_updated.exe`** (also in `dist/server_stats.exe`). The current root `server_stats.exe` was occupied by a running process and was not overwritten. Stop the old agent, replace it with the new build (rename it to `server_stats.exe` if necessary), and start it again. The update does not try to stop a running agent automatically.
+- **Linux Docker:** update sources on the VM and run `docker compose up -d --build server-stats-linux`.
+- **Rainmeter:** update `@Resources/Aggregate/generate.py`, preserve your JSON, and run `rebuild_aggregate.cmd`.
 
-## Docker Desktop на Windows: проверка доступности
+## Docker Desktop on Windows: availability check
 
-Профиль `linux` в общем `compose.yaml` использует `network_mode: host`. В Docker Desktop это не равно сети Windows: без отдельно включённой поддержки host networking контейнер может быть `healthy`, но `localhost:5000` в Windows не отвечает. В колонке `PORTS` при этом нет опубликованного порта. Внутренний healthcheck не проверяет доступность со стороны Windows.
+The `linux` profile in the shared `compose.yaml` uses `network_mode: host`. In Docker Desktop this is not the Windows network: without separately enabled host-networking support, the container may be `healthy` while `localhost:5000` does not respond in Windows. The `PORTS` column has no published port in this case. The internal healthcheck does not test availability from Windows.
 
-Docker Desktop — режим по умолчанию **в том же `compose.yaml`**: сервис `server-stats` использует bridge и явно публикует порт. Отдельный override-файл, профиль и `.env` для обычного запуска не нужны:
+Docker Desktop is the default mode **in the same `compose.yaml`**: service `server-stats` uses bridge networking and explicitly publishes the port. No separate override file, profile, or `.env` is needed for normal startup:
 
 ```powershell
 docker compose up -d --build
@@ -172,58 +172,58 @@ docker compose ps
 curl.exe http://127.0.0.1:5000/stats
 ```
 
-В `PORTS` должно быть `127.0.0.1:5000->5000/tcp`. По умолчанию доступ есть только с текущего компьютера; в Rainmeter для этой проверки укажите `127.0.0.1`. Внутри контейнера сервер принудительно слушает `0.0.0.0`, даже если для Linux в `.env` указан другой `SERVER_STATS_HOST`.
+`PORTS` should show `127.0.0.1:5000->5000/tcp`. By default, access is only from the current computer; for this Rainmeter check, use `127.0.0.1`. Inside the container the server forcibly listens on `0.0.0.0`, even if a different `SERVER_STATS_HOST` is specified for Linux in `.env`.
 
-Если порт 5000 занят, добавьте в `.env` `SERVER_STATS_PUBLISH_PORT=5001` и выполните ту же команду запуска. Тогда URL со стороны Windows — `http://127.0.0.1:5001/stats`. Для разрешения доступа из LAN задайте `SERVER_STATS_PUBLISH_HOST=0.0.0.0` и ограничьте входящий порт в Windows Firewall доверенным адресом Rainmeter. Не открывайте агент в интернет.
+If port 5000 is busy, add `SERVER_STATS_PUBLISH_PORT=5001` to `.env` and run the same startup command. The Windows-side URL is then `http://127.0.0.1:5001/stats`. To allow LAN access, set `SERVER_STATS_PUBLISH_HOST=0.0.0.0` and restrict the incoming port in Windows Firewall to the trusted Rainmeter address. Do not expose the agent to the Internet.
 
-**Важно:** этот режим показывает метрики Linux-среды Docker Desktop (например, hostname `docker-desktop`), а не Windows. Для настоящих показателей Windows используйте EXE. Для метрик Linux-виртуалки запускайте `docker compose up -d --build server-stats-linux` непосредственно на ней.
+**Important:** this mode shows metrics of the Docker Desktop Linux environment (for example hostname `docker-desktop`), not Windows. For real Windows metrics, use the EXE. For Linux VM metrics, run `docker compose up -d --build server-stats-linux` directly on that VM.
 
-Для остановки:
+To stop:
 
 ```powershell
 docker compose down
 ```
 
-При смене режима сначала выполните `docker compose --profile linux down`, затем запустите нужный сервис: не запускайте оба одновременно. При миграции со старого Linux Compose сервис назывался `server-stats`; остановка перед запуском нового `server-stats-linux` нужна, чтобы старый контейнер не занимал порт. Общие настройки образа, метрик, healthcheck и ограничений описаны один раз через YAML anchor.
+When changing modes, first run `docker compose --profile linux down`, then start the required service: do not run both simultaneously. During migration from the old Linux Compose setup, the service was named `server-stats`; stopping it before starting new `server-stats-linux` is required so the old container does not occupy the port. Shared image, metric, healthcheck, and limit settings are defined once through a YAML anchor.
 
-Если проблема возникает на настоящем Linux-хосте, проверьте `docker compose --profile linux logs --tail=100`, локальный `curl http://127.0.0.1:5000/stats`, адрес `SERVER_STATS_HOST` и правила firewall. При `network_mode: host` отсутствие записи в `PORTS` на Linux нормально — слушающий порт находится непосредственно на хосте.
+If a problem occurs on a real Linux host, check `docker compose --profile linux logs --tail=100`, local `curl http://127.0.0.1:5000/stats`, `SERVER_STATS_HOST`, and firewall rules. With `network_mode: host`, no `PORTS` entry on Linux is normal — the listening port is directly on the host.
 
-## Демо-маршруты: 10 / 50 / 80 / 100
+## Demo routes: 10 / 50 / 80 / 100
 
-Агент предоставляет четыре фиксированных демонстрационных состояния. Они **не создают нагрузку**, не изменяют реальные метрики и не вмешиваются в `/stats` или `/api/stats`.
+The agent provides four fixed demo states. They **create no load**, do not change real metrics, and do not interfere with `/stats` or `/api/stats`.
 
-| Состояние | Формат Rainmeter | JSON |
+| State | Rainmeter format | JSON |
 |---|---|---|
 | 10 | `/demo/10` | `/api/demo/10` |
 | 50 | `/demo/50` | `/api/demo/50` |
 | 80 | `/demo/80` | `/api/demo/80` |
 | 100 | `/demo/100` | `/api/demo/100` |
 
-Пример: `http://127.0.0.1:5000/demo/80`. Неизвестное состояние возвращает 404. Hostname обозначается `DEMO-80`, чтобы тестовые данные нельзя было принять за реальные.
+Example: `http://127.0.0.1:5000/demo/80`. An unknown state returns 404. Hostname is `DEMO-80`, so test data cannot be mistaken for real data.
 
-В состоянии N: ЦП, ОЗУ и заполнение диска = **N%**; память = N% от 16 ГиБ, диск = N% от 256 ГиБ. Сеть: приём и отправка по **N Мбит/с**; диски: чтение и запись по **N МБ/с**, то есть суммарный I/O = 2N МБ/с. Сеть и I/O — скорости, не проценты. Показатели постоянные, поэтому после заполнения истории графики становятся горизонтальными. На 80 и 100 проверяется красное предупреждение ЦП, ОЗУ и заполнения диска.
+In state N: CPU, RAM, and disk usage = **N%**; RAM = N% of 16 GiB, disk = N% of 256 GiB. NETWORK: receive and send at **N Mbit/s**; disks: read and write at **N MB/s**, meaning total I/O = 2N MB/s. NETWORK and I/O are speeds, not percentages. Values are constant, so graphs become horizontal after history fills. At 80 and 100, red CPU, RAM, and disk-usage warnings are checked.
 
-### Показать демо в виджете
+### Show a demo in the widget
 
-В общем `servers.json` можно добавить запись с `demo_load`:
+In shared `servers.json`, add an entry with `demo_load`:
 
 ```json
 {"id": "demo80", "address": "127.0.0.1", "port": 5000, "name": "DEMO-80", "enabled": true, "demo_load": 80}
 ```
 
-Либо через CLI из установленной папки `ServerStats`:
+Or use the CLI from the installed `ServerStats` folder:
 
 ```powershell
 py "@Resources\\Aggregate\\generate.py" --refresh add 127.0.0.1 --id demo80 --demo-load 80
 ```
 
-Готовый пример всех четырёх состояний находится в **`@Resources/Aggregate/servers.demo.json`**. Сначала сохраните свой рабочий `servers.json`, затем скопируйте в него содержимое демо-примера, запустите `rebuild_aggregate.cmd` и выберите `Aggregate-04.ini`. Для удалённого агента замените `127.0.0.1` на его адрес. Все четыре строки могут обращаться к одному серверу. Чтобы вернуть реальные данные, удалите `demo_load` или задайте `null` и пересоберите скин.
+A ready example of all four states is in **`@Resources/Aggregate/servers.demo.json`**. First save your working `servers.json`, then copy the demo example contents into it, run `rebuild_aggregate.cmd`, and select `Aggregate-04.ini`. For a remote agent, replace `127.0.0.1` with its address. All four rows may query one server. To return to real data, remove `demo_load` or set it to `null`, then rebuild the skin.
 
-Для новых маршрутов нужен обновлённый агент: замените EXE или выполните `docker compose up -d --build` (на Linux — `docker compose up -d --build server-stats-linux`).
+New routes require an updated agent: replace the EXE or run `docker compose up -d --build` (on Linux, `docker compose up -d --build server-stats-linux`).
 
-## Агент: диск и параметры запуска
+## Agent: disk and startup parameters
 
-В колонке **«Диск»** показаны занятое место файловой системы (с подписью GB, без процента; расчёт объёма — в 1024³ байт) и **скорость I/O: R — чтение, W — запись в MB/s** (1 МБ = 1 000 000 байт). I/O суммируется по дискам гостевой ОС, которые возвращает psutil; это не процент активности и не скорость отдельной точки монтирования. Если ОС не предоставляет счётчики I/O, показывается 0.0. Параметр `SERVER_STATS_DISK` влияет только на занятое место. По умолчанию это системный корень (`C:\` на обычной Windows, `/` на Linux). Для другого диска / точки монтирования:
+The **DISK** column shows filesystem usage (with a GB label and no percentage; capacity is calculated in 1024³ bytes) and **I/O speed: R — read, W — write in MB/s** (1 MB = 1,000,000 bytes). I/O is summed across guest-OS disks returned by psutil; it is not activity percentage or the speed of one mount point. If the OS provides no I/O counters, 0.0 is shown. `SERVER_STATS_DISK` affects usage only. The default is the system root (`C:\` on ordinary Windows, `/` on Linux). For another disk / mount point:
 
 ```powershell
 $env:SERVER_STATS_DISK = 'D:\'
@@ -232,43 +232,43 @@ $env:SERVER_STATS_HOST = '0.0.0.0'
 .\server_stats.exe
 ```
 
-На Linux: `SERVER_STATS_DISK=/data python3 server_stats.py`.
+On Linux: `SERVER_STATS_DISK=/data python3 server_stats.py`.
 
-`/stats` сохраняет первые шесть полей старого протокола, поэтому старый одиночный скин продолжает работать. Далее добавлены `HOSTNAME`, `DISK_PERCENT`, `DISK_USED`, `DISK_TOTAL`, `DISK_READ`, `DISK_WRITE`. Дополнительно `/api/stats` отдаёт JSON; поля `disk_read_mbps` и `disk_write_mbps`, несмотря на исторические имена, означают **МБ/с**, а не Мбит/с. Для показа I/O обновите агент на виртуалках и скин вместе: версия агента без `DISK_READ`/`DISK_WRITE` будет отмечена новым скином как неподходящая. Сетевые показатели суммируются по интерфейсам гостевой ОС.
+`/stats` preserves the first six fields of the old protocol, so the old standalone skin continues to work. `HOSTNAME`, `DISK_PERCENT`, `DISK_USED`, `DISK_TOTAL`, `DISK_READ`, and `DISK_WRITE` are added afterward. `/api/stats` additionally returns JSON; despite their historical names, `disk_read_mbps` and `disk_write_mbps` mean **MB/s**, not Mbit/s. To show I/O, update the agent on the VMs and the skin together: an agent without `DISK_READ`/`DISK_WRITE` is marked incompatible by the new skin. NETWORK values are summed across guest-OS interfaces.
 
-Агент не имеет аутентификации и TLS. Открывайте порт **только для компьютера с Rainmeter в доверенной LAN/VPN**, не публикуйте его в интернет. В Windows EXE используется встроенный Flask-сервер для небольшого локального монитора; в Linux Docker — Gunicorn.
+The agent has no authentication or TLS. Open the port **only to the Rainmeter computer on a trusted LAN/VPN**; do not publish it to the Internet. The Windows EXE uses the built-in Flask server for a small local monitor; Linux Docker uses Gunicorn.
 
-## Память Rainmeter при длительной работе
+## Rainmeter memory during long operation
 
-Обновлённый агрегированный скин не вызывает `!UpdateMeter *` / `!Redraw` после каждого HTTP-запроса и не пересоздаёт Shape индикатора при каждом ответе. Три состояния точки имеют фиксированную геометрию; видимость меняется только при переходе online/offline. Статические фон, разделители, заголовки и адреса имеют `UpdateDivider=-1`; постоянно обновляются только живые данные. Автоматический пересчёт размера окна выключен, так как размер уже задан генератором.
+The updated aggregate skin does not call `!UpdateMeter *` / `!Redraw` after every HTTP request and does not recreate the indicator Shape on every response. The three dot states have fixed geometry; visibility changes only when switching online/offline. Static backgrounds, dividers, headings, and addresses have `UpdateDivider=-1`; only live data is continuously updated. Automatic window-size recalculation is disabled because the generator already sets the size.
 
-Для WebParser установлены `Flags=ForceReload | NoCacheWrite | NoCookies`: статистика не сохраняется в HTTP-кэш и cookie-хранилище WinINet. Ошибки подключения не вызывают циклическую перерисовку всех строк; недоступные машины опрашиваются реже. Автоматических перезапусков, периодических refresh и принудительного обрезания working set нет — они только маскировали бы проблему.
+WebParser uses `Flags=ForceReload | NoCacheWrite | NoCookies`: statistics are not stored in the HTTP cache or WinINet cookie store. Connection errors do not cause cyclic redrawing of all rows; unavailable machines are polled less often. There are no automatic restarts, periodic refreshes, or forced working-set trimming — those would only mask the problem.
 
-Чтобы применить исправление к уже настроенному скину:
+To apply the fix to an already configured skin:
 
-1. Замените **только** `@Resources/Aggregate/generate.py` в установленной папке скина, не перезаписывая свой `servers.json`.
-2. Запустите `rebuild_aggregate.cmd`, чтобы пересоздать INI с вашими адресами.
-3. Один раз полностью закройте и запустите Rainmeter, чтобы освободить память, накопившуюся до обновления. Агенты EXE и Docker менять не требуется.
+1. Replace **only** `@Resources/Aggregate/generate.py` in the installed skin folder; do not overwrite your `servers.json`.
+2. Run `rebuild_aggregate.cmd` to regenerate INIs with your addresses.
+3. Fully close and restart Rainmeter once to release memory accumulated before the update. EXE and Docker agents do not need to be changed.
 
-Если хотите проверить результат на своём компьютере, установите зависимости `py -m pip install -r requirements.txt` и из корня проекта запустите:
+To check the result on your computer, install dependencies with `py -m pip install -r requirements.txt` and run from the project root:
 
 ```powershell
 py tests/monitor_rainmeter_memory.py --minutes 60 --csv rainmeter-memory.csv
 ```
 
-Скрипт записывает **Private Bytes**, working set и число handles всего процесса Rainmeter в CSV и выводит тренд памяти после минутного прогрева. Он не хранит историю замеров в памяти и не вмешивается в процесс. Для сравнения оставьте активным только агрегированный скин; отдельно проверьте доступные и недоступные машины. Устойчивый рост Private Bytes важнее разового скачка working set. Все остальные скины и плагины в том же процессе также влияют на замер.
+The script records **Private Bytes**, working set, and total Rainmeter-process handle count to CSV, and prints the memory trend after a one-minute warm-up. It does not keep measurement history in memory or interfere with the process. For comparison, leave only the aggregate skin active; separately test available and unavailable machines. Sustained Private Bytes growth matters more than a one-time working-set spike. All other skins and plugins in the same process also affect the measurement.
 
-Эти изменения устраняют лишнее выделение ресурсов в конфигурации, но сами по себе не доказывают отсутствие утечки в конкретной версии Rainmeter/плагина: для этого нужен длительный замер на реальной установке. Если рост продолжается, сохраните CSV и версию Rainmeter для дальнейшей диагностики.
+These changes remove unnecessary resource allocation in the configuration, but do not by themselves prove the absence of a leak in a particular Rainmeter/plugin version: a long measurement on a real installation is needed. If growth continues, save the CSV and Rainmeter version for further diagnosis.
 
-## Сборка и проверки
+## Build and checks
 
 ```powershell
 py -m pip install -r requirements.txt
 py -m pip install pyinstaller
 py -m PyInstaller --noconfirm --onefile --console server_stats.py
-# Результат: dist/server_stats.exe
+# Result: dist/server_stats.exe
 
 py -m unittest discover -s tests -v
 ```
 
-Тесты проверяют протокол агента, расчёт скоростей, генерацию разных размеров, исключение отключённых машин, обработку offline, IPv6, валидацию и UTF-16 INI. Визуальную отрисовку и реальные сетевые подключения нужно дополнительно проверить в Rainmeter с вашими виртуалками.
+Tests check the agent protocol, speed calculation, generation of different sizes, exclusion of disabled machines, offline handling, IPv6, validation, and UTF-16 INI. Visual rendering and real network connections must additionally be checked in Rainmeter with your VMs.

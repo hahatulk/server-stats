@@ -90,7 +90,7 @@ class AggregateTests(unittest.TestCase):
         self.assertEqual(skin["TextStyle"]["DynamicVariables"], "0")
         self.assertEqual(skin["TextStyle"]["UpdateDivider"], "-1")
         self.assertEqual(skin["VM1CPUValue"]["UpdateDivider"], "1")
-        self.assertEqual(skin["VM1CPUGraph"]["UpdateDivider"], "1")
+        self.assertEqual(skin["VM1CPUGraph"]["UpdateDivider"], "2")
 
     def test_cpu_and_ram_graphs_are_fixed_size_native_meters(self):
         skin = parse(configuration(2))
@@ -109,7 +109,7 @@ class AggregateTests(unittest.TestCase):
                     self.assertEqual(graph["H"], "36")
                     self.assertEqual(graph["AutoScale"], "0")
                     self.assertEqual(graph["Group"], f"VM{i}Data")
-                    self.assertEqual(graph["UpdateDivider"], "1")
+                    self.assertEqual(graph["UpdateDivider"], "2")
                 self.assertEqual(frame["UpdateDivider"], "-1")
                 self.assertEqual(skin[prefix]["MaxValue"], "100")
         self.assertNotIn("VM1DiskBar", skin)
@@ -151,7 +151,7 @@ class AggregateTests(unittest.TestCase):
     def test_compact_network_dark_background_and_disk_visualizations(self):
         skin = parse(configuration())
         self.assertEqual(skin["Variables"]["BackgroundColor"], "12,12,12,250")
-        self.assertEqual(skin["ColumnNet"]["Text"], "СЕТЬ")
+        self.assertEqual(skin["ColumnNet"]["Text"], "NETWORK")
         self.assertEqual(skin["VM1NetValue"]["Text"], "↓%1 ↑%2 #VM1NetUnit#")
         self.assertEqual(skin["VM1NetValue"]["W"], "146")
         self.assertNotIn("VM1NetDetail", skin)
@@ -166,7 +166,7 @@ class AggregateTests(unittest.TestCase):
             graph = skin["VM1DiskIO"+suffix]
             self.assertEqual(graph["MeasureName"], "VM1DiskTotalIO")
             self.assertEqual(graph["AutoScale"], "1")
-            self.assertEqual(graph["UpdateDivider"], "1")
+            self.assertEqual(graph["UpdateDivider"], "2")
             self.assertEqual(graph["Group"], "VM1Data")
         self.assertEqual(skin["VM1DiskIOGraph"]["LineColor"], "#DiskColor#")
         self.assertEqual(skin["VM1DiskIOGraphFill"]["PrimaryColor"], "#DiskColor#,30")
@@ -195,8 +195,8 @@ class AggregateTests(unittest.TestCase):
             self.assertEqual(value["FontSize"], skin["TextStyle"]["FontSize"])
             self.assertEqual(value["MeasureName"], prefix+"NetRecvDisplay")
             self.assertEqual(value["MeasureName2"], prefix+"NetSentDisplay")
-            self.assertEqual(re.findall(value["InlinePattern"], "↓12.3 ↑1.2 Мбит/с"), ["↓12.3"])
-            self.assertEqual(re.findall(value["InlinePattern2"], "↓12.3 ↑1.2 Мбит/с"), ["↑1.2"])
+            self.assertEqual(re.findall(value["InlinePattern"], "↓12.3 ↑1.2 Mbit/s"), ["↓12.3"])
+            self.assertEqual(re.findall(value["InlinePattern2"], "↓12.3 ↑1.2 Mbit/s"), ["↑1.2"])
             graph = skin[prefix+"NetGraph"]
             self.assertEqual(graph["Meter"], "Line")
             self.assertEqual(graph["MeasureName"], prefix+"Recv")
@@ -208,22 +208,46 @@ class AggregateTests(unittest.TestCase):
             self.assertEqual(graph["W"], "144")
             self.assertEqual(graph["AutoScale"], "1")
             self.assertEqual(graph["Group"], prefix+"Data")
-            self.assertEqual(graph["UpdateDivider"], "1")
+            self.assertEqual(graph["UpdateDivider"], "2")
             self.assertEqual(skin[prefix+"NetGraphFrame"]["UpdateDivider"], "-1")
             for metric in ("CPU", "RAM"):
                 self.assertEqual(skin[prefix+metric+"Value"]["FontColor"], skin[prefix+"DiskDetail"]["FontColor"])
                 self.assertIn('FontColor "178,178,178"', skin[prefix+metric+"Warning"]["IfFalseAction"])
 
+    def test_generated_interface_uses_english_text(self):
+        for count in (0, 1, 20):
+            content = generator.render(configuration(count), slots=20)
+            self.assertIsNone(re.search(r"[\u0400-\u04ff]", content))
+            skin = configparser.RawConfigParser()
+            skin.read_string(content)
+            self.assertEqual(skin["Edit"]["Text"], "list")
+            self.assertEqual(skin["Rebuild"]["Text"], "refresh")
+            self.assertEqual(skin["ColumnCPU"]["Text"], "CPU")
+            self.assertEqual(skin["ColumnRAM"]["Text"], "RAM")
+
+    def test_graph_sampling_matches_configured_poll_interval(self):
+        for interval in (1, 2, 5, 60):
+            config = configuration(20)
+            config["update_seconds"] = interval
+            skin = parse(config)
+            self.assertEqual(skin["Rainmeter"]["Update"], "1000")
+            for i in (1, 10, 11, 20):
+                prefix = f"VM{i}"
+                self.assertEqual(skin[prefix+"Source"]["UpdateRate"], str(interval))
+                for suffix in ("CPUGraph", "CPUGraphFill", "RAMGraph", "RAMGraphFill",
+                               "NetGraph", "DiskIOGraph", "DiskIOGraphFill"):
+                    self.assertEqual(skin[prefix+suffix]["UpdateDivider"], str(interval))
+
     def test_network_adaptive_unit_thresholds_and_round_trip(self):
         skin = parse(configuration())
-        self.assertEqual(skin["Variables"]["VM1NetUnit"], "Кбит/с")
+        self.assertEqual(skin["Variables"]["VM1NetUnit"], "Kbit/s")
         self.assertEqual(skin["VM1NetPeak"]["Formula"], "Max(VM1Recv, VM1Sent)")
         self.assertEqual(skin["VM1NetScale"]["Formula"], "(VM1NetPeak >= 1000 ? 1000 : (VM1NetPeak >= 1 ? 1 : 0.001))")
         scale = skin["VM1NetScale"]
-        cases = [(0, 0, 0.001, "Кбит/с"), (0.000008, 0.125, 0.001, "Кбит/с"),
-                 (0.999, 0, 0.001, "Кбит/с"), (0, 1, 1, "Мбит/с"),
-                 (999.999, 2, 1, "Мбит/с"), (1, 1000, 1000, "Гбит/с"),
-                 (2500, 500, 1000, "Гбит/с"), (0.05, 0.025, 0.001, "Кбит/с")]
+        cases = [(0, 0, 0.001, "Kbit/s"), (0.000008, 0.125, 0.001, "Kbit/s"),
+                 (0.999, 0, 0.001, "Kbit/s"), (0, 1, 1, "Mbit/s"),
+                 (999.999, 2, 1, "Mbit/s"), (1, 1000, 1000, "Gbit/s"),
+                 (2500, 500, 1000, "Gbit/s"), (0.05, 0.025, 0.001, "Kbit/s")]
         for recv, sent, divisor, unit in cases:
             values = {"VM1NetScale": divisor}
             matched = []
@@ -298,7 +322,7 @@ class AggregateTests(unittest.TestCase):
         self.assertEqual(skin["VM1DiskDetail"]["W"], "130")
         self.assertEqual(skin["VM1DiskIO"]["Text"], "R %1 W %2 MB/s")
         self.assertEqual(skin["VM1DiskIO"]["NumOfDecimals"], "1")
-        self.assertEqual(skin["ColumnDisk"]["Text"], "ДИСК")
+        self.assertEqual(skin["ColumnDisk"]["Text"], "DISK")
         self.assertEqual(skin["ColumnDiskIO"]["Text"], "I/O")
         self.assertIn("VM1DiskIO", skin)
 
@@ -429,7 +453,7 @@ class AggregateTests(unittest.TestCase):
             target = Path(directory) / "Aggregate.ini"
             generator.generate(config, target)
             self.assertTrue(target.read_bytes().startswith(b"\xff\xfe"))
-            self.assertIn("ЦП", target.read_text(encoding="utf-16"))
+            self.assertIn("Text=CPU", target.read_text(encoding="utf-16"))
             self.assertIn("Rectangle 1,1,661,760,8", target.read_text(encoding="utf-16"))
 
 

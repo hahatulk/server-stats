@@ -1,23 +1,23 @@
-# ServerStats — описание проекта и контекст для переноса мониторинга на сайт
+# ServerStats — project description and context for moving monitoring to a website
 
-> Этот документ фиксирует текущее устройство проекта, результат совместной доработки и требования к будущему веб-разделу. Его можно передать разработчику или ИИ вместе с исходниками.
+> This document records the current project structure, the result of the joint improvements, and requirements for a future web section. It can be given to a developer or AI together with the source files.
 >
-> **Важно:** агент, Docker-развёртывание и Rainmeter-виджет уже реализованы. Веб-раздел, центральный сервер мониторинга и хранение истории пока **не реализованы**. Разделы с рекомендациями для сайта — проектное предложение, а не описание существующего кода.
+> **Important:** the agent, Docker deployment, and Rainmeter widget are already implemented. The web section, central monitoring server, and history storage are **not implemented yet**. Sections with recommendations for the site are proposals, not descriptions of existing code.
 
-## 1. Что находится в этой папке
+## 1. What is in this folder
 
-**ServerStats** — небольшой монитор ресурсов Windows- и Linux-машин, в первую очередь виртуальных машин. Исходная задача — компактно видеть состояние примерно **10–20 ВМ** на рабочем столе в стиле Win10 Widgets, без открытия отдельных окон для каждой машины.
+**ServerStats** is a small resource monitor for Windows and Linux machines, primarily virtual machines. The original task was to see the state of about **10–20 VMs** compactly on the desktop in the style of Win10 Widgets, without opening a separate window for each machine.
 
-У проекта две основные части:
+The project has two main parts:
 
-1. **Агент на каждой наблюдаемой машине**: Python + Flask + psutil, отдаёт текущие метрики по HTTP. На Windows используется EXE, на Linux предусмотрен Docker.
-2. **Агрегированный виджет Rainmeter**: опрашивает агентов и показывает по строке на каждую машину — hostname/IP, ЦП, ОЗУ, сеть, дисковый I/O и заполнение диска.
+1. **An agent on each monitored machine**: Python + Flask + psutil, serving current metrics over HTTP. Windows uses an EXE; Linux has a Docker setup.
+2. **An aggregated Rainmeter widget**: polls the agents and shows one row per machine — hostname/IP, CPU, RAM, network, disk I/O, and disk usage.
 
-Также сохранён старый одиночный скин. Новый агрегированный вариант не заменяет его и не требует его удаления.
+The old single-machine skin is also retained. The new aggregated version does not replace it and does not require removing it.
 
-Следующая задача — сделать **раздел существующего веб-сайта с таким же составом метрик, форматированием, цветами и графиками**. Технологический стек сайта в этой папке не задан.
+The next task is to create a **section of the existing website with the same metrics, formatting, colors, and charts**. The website technology stack is not specified in this folder.
 
-## 2. Текущая архитектура
+## 2. Current architecture
 
 ```text
 Windows VM                          Linux VM
@@ -25,240 +25,240 @@ server_stats.exe                    Docker: server_stats.py + Gunicorn
         │ HTTP                              │ HTTP
         └────────────────┬──────────────────┘
                          │
-                 Rainmeter на Windows
+                 Rainmeter on Windows
                  Aggregate-NN.ini
                          │
-              строки, статусы и графики
+              rows, statuses, and charts
 
-Конфигурация виджета:
+Widget configuration:
 servers.json → generate.py → servers.inc + Aggregate*.ini
 ```
 
-Ключевые свойства:
+Key properties:
 
-- Агент собирает показатели локальной ОС, а не запрашивает API гипервизора.
-- Каждая ВМ должна иметь собственный доступный агент.
-- `host_title` — подпись группы/гипервизора, **не источник метрик физического хоста**.
-- Нет центральной базы, очереди, сервера агрегации или долговременного архива.
-- Агент держит только последний снимок; короткую историю графиков хранит Rainmeter.
-- Для веб-версии можно переиспользовать JSON API агентов, не разбирая Rainmeter INI.
+- The agent collects metrics from the local OS rather than querying a hypervisor API.
+- Every VM must have its own reachable agent.
+- `host_title` is a group/hypervisor label, **not a source of physical-host metrics**.
+- There is no central database, queue, aggregation server, or long-term archive.
+- The agent keeps only the latest snapshot; Rainmeter keeps a short chart history.
+- The web version can reuse the agents' JSON API without parsing Rainmeter INI files.
 
-## 3. Карта файлов
+## 3. File map
 
-| Путь | Назначение |
+| Path | Purpose |
 |---|---|
-| `server_stats.py` | Сбор метрик, HTTP-маршруты, JSON и текстовый протокол, демо-данные |
-| `server_stats.exe` | Windows-бинарник в корне; соответствие конкретной версии исходников нужно проверять |
-| `dist/server_stats.exe` | Артефакт сборки Windows-агента |
-| `requirements.txt` | Зависимости Python-агента |
-| `requirements-docker.txt` | Зависимости Docker-варианта, включая Gunicorn |
-| `Dockerfile` | Linux-образ Python 3.13 slim, запуск Gunicorn от UID 65534 |
-| `gunicorn.conf.py` | Один worker, четыре HTTP-потока, запуск отдельного сборщика после создания worker |
-| `compose.yaml` | Два режима развёртывания: Docker Desktop и настоящий Linux-хост |
-| `docker.env.example` | Пример переменных окружения Docker |
-| `.dockerignore` | Исключения из контекста сборки |
-| `ServerStats/ServerStats_Win10.ini` | Сохранённый исходный одиночный скин |
-| `ServerStats/@Resources/` | Ресурсы и стили Rainmeter |
-| `ServerStats/@Resources/Aggregate/generate.py` | Генератор общего include и всех вариантов агрегированного скина |
-| `ServerStats/@Resources/Aggregate/servers.json` | Единый редактируемый список машин и настройки виджета |
-| `ServerStats/@Resources/Aggregate/servers.inc` | Сгенерированные общие переменные; вручную не редактировать |
-| `ServerStats/@Resources/Aggregate/servers.demo.json` | Пример четырёх демонстрационных машин |
-| `ServerStats/Aggregate/Aggregate.ini` | Автоматический вариант по числу включённых машин |
-| `ServerStats/Aggregate/Aggregate-01.ini` … `Aggregate-20.ini` | Готовые варианты на 1–20 мест |
-| `ServerStats/rebuild_aggregate.cmd` | Запуск пересборки через Python Launcher `py.exe` |
-| `tests/test_server_stats.py` | Тесты агента, протокола, скоростей и демо |
-| `tests/test_aggregate.py` | Тесты генератора, раскладки, форматирования и состояний |
-| `tests/test_docker.py` | Проверки Docker-конфигурации |
-| `tests/monitor_rainmeter_memory.py` | Потоковая диагностика потребления памяти Rainmeter |
-| `README.md` | Инструкция по установке, настройке и эксплуатации |
-| `PROJECT_CONTEXT.md` | Этот документ: описание проекта и ориентир для веб-реализации |
+| `server_stats.py` | Metric collection, HTTP routes, JSON and text protocols, demo data |
+| `server_stats.exe` | Windows binary in the root; correspondence to the exact source version must be checked |
+| `dist/server_stats.exe` | Windows-agent build artifact |
+| `requirements.txt` | Python-agent dependencies |
+| `requirements-docker.txt` | Docker dependencies, including Gunicorn |
+| `Dockerfile` | Python 3.13 slim Linux image, running Gunicorn as UID 65534 |
+| `gunicorn.conf.py` | One worker, four HTTP threads, starts a separate collector after worker creation |
+| `compose.yaml` | Two deployment modes: Docker Desktop and a real Linux host |
+| `docker.env.example` | Example Docker environment variables |
+| `.dockerignore` | Build-context exclusions |
+| `ServerStats/ServerStats_Win10.ini` | Retained original single-machine skin |
+| `ServerStats/@Resources/` | Rainmeter resources and styles |
+| `ServerStats/@Resources/Aggregate/generate.py` | Generator for the common include and all aggregated-skin variants |
+| `ServerStats/@Resources/Aggregate/servers.json` | Single editable machine list and widget settings |
+| `ServerStats/@Resources/Aggregate/servers.inc` | Generated common variables; do not edit manually |
+| `ServerStats/@Resources/Aggregate/servers.demo.json` | Example with four demo machines |
+| `ServerStats/Aggregate/Aggregate.ini` | Automatic variant based on the number of enabled machines |
+| `ServerStats/Aggregate/Aggregate-01.ini` … `Aggregate-20.ini` | Ready-made variants for 1–20 slots |
+| `ServerStats/rebuild_aggregate.cmd` | Runs rebuilding through the Python Launcher `py.exe` |
+| `tests/test_server_stats.py` | Agent, protocol, rate, and demo tests |
+| `tests/test_aggregate.py` | Generator, layout, formatting, and state tests |
+| `tests/test_docker.py` | Docker-configuration checks |
+| `tests/monitor_rainmeter_memory.py` | Streaming Rainmeter memory-consumption diagnostics |
+| `README.md` | Installation, configuration, and operation instructions |
+| `PROJECT_CONTEXT.md` | This document: project description and guide for web implementation |
 
-Сгенерированные INI и include записываются в UTF-16. JSON-конфигурация — UTF-8. Генератор не требует Flask и psutil.
+Generated INI and include files are written as UTF-16. JSON configuration is UTF-8. The generator does not require Flask or psutil.
 
-## 4. Что было сделано в ходе доработки
+## 4. Work completed during the improvements
 
-### 4.1. Из одиночного скина — в общую панель ВМ
+### 4.1. From a single skin to a common VM dashboard
 
-- Оставлен исходный одиночный скин.
-- Создан агрегированный виджет для нескольких машин.
-- Добавлены **20 готовых вариантов**, выбираемых в Rainmeter: от 1 до 20 мест.
-- Оставлен автоматический вариант по всему списку.
-- Все варианты используют **один `servers.json`**, а не отдельные списки IP.
-- Общие параметры вынесены в генерируемый `servers.inc`.
-- Введены команды генерации, просмотра, добавления и удаления машин.
-- Добавлены масштабирование, настройка частоты опроса и обновление активного скина.
+- The original single-machine skin was retained.
+- An aggregated widget for multiple machines was created.
+- **20 ready-made variants** were added, selectable in Rainmeter: 1 to 20 slots.
+- An automatic variant for the full list was retained.
+- All variants use **one `servers.json`**, rather than separate IP lists.
+- Shared parameters were moved to generated `servers.inc`.
+- Commands for generating, listing, adding, and removing machines were introduced.
+- Scaling, polling-frequency configuration, and active-skin refresh were added.
 
-### 4.2. Список и раскладка
+### 4.2. List and layout
 
-- До 10 мест используется одна панель.
-- При 11–20 местах: ВМ 1–10 слева, 11–20 справа.
-- Заголовки повторяются над обеими панелями.
-- Пустые места подписываются «не настроено» и не опрашиваются.
-- Отключённые записи исключаются из отображения и нумерации.
-- Вариант на N мест опрашивает только первые N включённых машин.
-- Все варианты лежат в одной конфигурации Rainmeter: выбор другого варианта заменяет предыдущий, а не запускает второй набор опросов.
+- Up to 10 slots use one panel.
+- With 11–20 slots: VMs 1–10 are on the left, 11–20 on the right.
+- Headers are repeated above both panels.
+- Empty slots are labeled “not configured” and are not polled.
+- Disabled entries are excluded from display and numbering.
+- An N-slot variant polls only the first N enabled machines.
+- All variants are in one Rainmeter configuration: choosing another variant replaces the previous one instead of starting a second set of polls.
 
-### 4.3. Метрики и визуальное оформление
+### 4.3. Metrics and visual design
 
-- Добавлены реальный hostname, заполнение диска, чтение и запись дисков.
-- Для ЦП и ОЗУ сделаны линии с полупрозрачной заливкой и рамкой.
-- Для сети — две линии с общей автоматической шкалой.
-- Для I/O — зелёный график суммы чтения и записи с автомасштабом.
-- Для заполнения диска — круговая диаграмма и занятый/общий объём.
-- Добавлены серые числовые значения и красные предупреждения от 80%.
-- Добавлены ожидание, online/offline и скрытие недостоверных старых значений при ошибке.
-- Сеть переведена на адаптивные Кбит/с, Мбит/с и Гбит/с с округлением до десятых.
-- Цвет чтения диска совпадает с приёмом сети, цвет записи — с отправкой.
+- Real hostname, disk usage, and disk reads/writes were added.
+- CPU and RAM use lines with translucent fill and a border.
+- Network uses two lines with one shared automatic scale.
+- I/O uses a green chart of read plus write with automatic scaling.
+- Disk usage uses a pie chart and used/total capacity.
+- Gray numeric values and red warnings from 80% were added.
+- Waiting, online/offline, and hiding unreliable stale values on error were added.
+- Network was changed to adaptive Kbit/s, Mbit/s, and Gbit/s, rounded to one decimal place.
+- Disk-read color matches network receive; disk-write color matches network send.
 
-### 4.4. Итоговые правки интерфейса
+### 4.4. Final interface adjustments
 
-После нескольких итераций согласован следующий вид:
+After several iterations, the following appearance was agreed:
 
-- Размер основных числовых значений — **9** при масштабе 1.0.
-- Столбец hostname/IP сужен до **140 px**.
-- Сетевой столбец расширен до **146 px**.
-- Текст и заголовки показателей центрируются относительно соответствующих графиков.
-- Hostname и адрес остаются выровненными слева.
-- Дисковый I/O расположен слева, круговая диаграмма и объём — справа от него.
-- Объём диска расположен под круговой диаграммой, поле текста расширено до **130 px**.
-- Единицы GB и MB/s находятся возле текущих значений, не в заголовках.
-- В ОЗУ и объёме диска есть пробелы с двух сторон от `/`.
-- Между `R`/`W` и числом обязательно есть пробел.
+- Main numeric values have size **9** at scale 1.0.
+- The hostname/IP column was narrowed to **140 px**.
+- The network column was widened to **146 px**.
+- Metric text and headers are centered relative to their corresponding charts.
+- Hostname and address remain left-aligned.
+- Disk I/O is on the left; the pie chart and capacity are on its right.
+- Disk capacity is below the pie chart; its text field was widened to **130 px**.
+- GB and MB/s units are next to current values, not in headers.
+- RAM and disk-capacity values have spaces on both sides of `/`.
+- There must be a space between `R`/`W` and the number.
 
-**Не возвращать слитное `R0.0`/`W0.0` и не убирать пробелы вокруг `/`.**
+**Do not restore concatenated `R0.0`/`W0.0` or remove spaces around `/`.**
 
-### 4.5. Изменения агента
+### 4.5. Agent changes
 
-- Снимок показателей обновляется атомарно под блокировкой.
-- Скорости считаются по разнице накопительных счётчиков и монотонному времени.
-- Учтены сброс счётчика и некорректный интервал: скорость не уходит в минус.
-- Добавлены JSON API и расширение старого текстового протокола.
-- Повышена точность сети до шести знаков после запятой в Мбит/с.
-- В текстовом ответе сеть выводится обычным десятичным числом, без экспоненты.
-- Добавлены переменные окружения для адреса, порта, файловой системы и Linux procfs.
-- Добавлены безопасные синтетические демо-маршруты 10/50/80/100.
+- The metrics snapshot is updated atomically under a lock.
+- Rates are calculated from differences in cumulative counters and monotonic time.
+- Counter resets and invalid intervals are handled: rates never become negative.
+- A JSON API and an extension of the old text protocol were added.
+- Network precision was increased to six decimal places in Mbit/s.
+- The text response prints network values as ordinary decimals, without exponent notation.
+- Environment variables for address, port, filesystem, and Linux procfs were added.
+- Safe synthetic demo routes 10/50/80/100 were added.
 
 ### 4.6. Docker
 
-- Добавлен Linux-образ с Gunicorn.
-- Разделены реальный Linux-хост и Docker Desktop, но в **одном `compose.yaml`**.
-- Исправлен запуск без профиля: обычный `docker compose up -d --build` запускает Desktop-сервис.
-- Для Linux используется явный выбор `server-stats-linux`.
-- Добавлены host networking, доступ к метрикам хоста, healthcheck, ограничение логов и ограничения привилегий.
-- Зафиксировано: Docker Desktop не заменяет Windows-агент и не показывает показатели Windows.
+- A Linux image with Gunicorn was added.
+- Real Linux host and Docker Desktop were separated, but kept in **one `compose.yaml`**.
+- Startup without a profile was fixed: ordinary `docker compose up -d --build` starts the Desktop service.
+- Linux uses an explicit `server-stats-linux` selection.
+- Host networking, access to host metrics, a healthcheck, log limits, and privilege restrictions were added.
+- It is documented that Docker Desktop does not replace the Windows agent and does not show Windows metrics.
 
-### 4.7. Потребление памяти и проверки
+### 4.7. Memory use and checks
 
-- Используются нативные графики с ограниченной историей по ширине.
-- Убраны массовые принудительные обновления и перерисовки на каждый HTTP-ответ.
-- Геометрия статических элементов не пересоздаётся на каждом обновлении.
-- Переходы online/offline обрабатываются при смене состояния.
-- Для недоступных ВМ введён редкий повторный опрос.
-- Отключено сохранение ответов WebParser в HTTP-кэш и cookie-хранилище.
-- Добавлен отдельный инструмент длительного измерения памяти Rainmeter.
-- Последний выполненный набор: **33 теста успешно прошли**.
+- Native charts with width-limited history are used.
+- Mass forced updates and redraws on every HTTP response were removed.
+- Static-element geometry is not recreated on every update.
+- Online/offline transitions are handled when state changes.
+- Infrequent retries were introduced for unreachable VMs.
+- Saving WebParser responses to the HTTP cache and cookie store was disabled.
+- A separate tool for long-term Rainmeter memory measurement was added.
+- Last completed set: **33 tests passed successfully**.
 
-Эти меры уменьшают лишние выделения ресурсов, но **отсутствие утечки памяти в длительном запуске Rainmeter не доказано**.
+These measures reduce unnecessary allocations, but **the absence of a memory leak during a long Rainmeter run has not been proven**.
 
-## 5. Итоговый интерфейс — ориентир для сайта
+## 5. Final interface — guide for the website
 
-### 5.1. Состав строки
+### 5.1. Row composition
 
 ```text
-HOSTNAME / IP       ЦП             ОЗУ                    СЕТЬ                         I/O                    ДИСК
-vm-example          42%            3.2 / 8.0 GB (40%)      ↓12.3 ↑1.2 Мбит/с            R 0.0 W 0.0 MB/s       круговая диаграмма
-192.168.1.11        [график]       [график]                [две линии]                 [график R + W]         128.0 / 256.0 GB
+HOSTNAME / IP       CPU            RAM                    NETWORK                    I/O                    DISK
+vm-example          42%            3.2 / 8.0 GB (40%)     ↓12.3 ↑1.2 Mbit/s          R 0.0 W 0.0 MB/s       pie chart
+192.168.1.11        [chart]        [chart]                [two lines]               [R + W chart]          128.0 / 256.0 GB
 ```
 
-Это схема взаимного расположения, не буквальная текстовая таблица для реализации.
+This is a relative-layout diagram, not a literal text table to implement.
 
-### 5.2. Точные форматы
+### 5.2. Exact formats
 
-| Показатель | Пример | Правило |
+| Metric | Example | Rule |
 |---|---|---|
-| ЦП | `42%` | Целый процент, график 0–100% |
-| ОЗУ | `3.2 / 8.0 GB (40%)` | Объёмы с одним знаком, процент целый, пробелы вокруг `/` |
-| Сеть | `↓12.3 ↑1.2 Мбит/с` | Одна строка, один знак после запятой, одна общая единица на оба направления |
-| Чтение/запись | `R 0.0 W 0.0 MB/s` | Пробел после R и W, без `/` между направлениями, единица в конце |
-| Объём диска | `128.0 / 256.0 GB` | Один знак после запятой, пробелы вокруг `/`, без отдельного процента |
+| CPU | `42%` | Whole-number percentage, chart 0–100% |
+| RAM | `3.2 / 8.0 GB (40%)` | One decimal, whole-number percentage, spaces around `/` |
+| Network | `↓12.3 ↑1.2 Mbit/s` | One line, one decimal place, one shared unit for both directions |
+| Read/write | `R 0.0 W 0.0 MB/s` | Space after R and W, no `/` between directions, unit at the end |
+| Disk capacity | `128.0 / 256.0 GB` | One decimal place, spaces around `/`, no separate percentage |
 
-Не заменять `0.0` на пустую строку и не путать нулевое значение с недоступностью машины.
+Do not replace `0.0` with an empty string or confuse a zero value with an unavailable machine.
 
-**Единицы:** подпись GB соответствует согласованному интерфейсу, но агент делит память и объём диска на **1024³**. Это двоичные объёмы, а не десятичные GB. При переносе для визуального совпадения не пересчитывать их молча. Дисковый MB/s, напротив, действительно десятичный: 1 MB = 1 000 000 байт.
+**Units:** the GB label matches the agreed interface, but the agent divides memory and disk capacity by **1024³**. These are binary quantities, not decimal GB. For visual matching, do not silently recalculate them during migration. Disk MB/s, in contrast, is genuinely decimal: 1 MB = 1,000,000 bytes.
 
-### 5.3. Цвета
+### 5.3. Colors
 
-| Элемент | Значение |
+| Element | Value |
 |---|---|
-| Основной фон | `rgba(12, 12, 12, 250/255)` ≈ `#0C0C0C` почти без прозрачности |
-| Обычные числовые значения | `rgb(178,178,178)` / `#B2B2B2` |
-| ЦП | `rgb(17,125,187)` / `#117DBB` |
-| ОЗУ | `rgb(139,18,174)` / `#8B12AE` |
-| Сеть download, диск R | `rgb(237,165,130)` / `#EDA582` |
-| Сеть upload, диск W | `rgb(100,200,255)` / `#64C8FF` |
-| Диск, суммарный I/O | `rgb(77,166,12)` / `#4DA60C` |
-| Предупреждение | `rgb(240,85,85)` / `#F05555` |
+| Main background | `rgba(12, 12, 12, 250/255)` ≈ `#0C0C0C`, almost opaque |
+| Ordinary numeric values | `rgb(178,178,178)` / `#B2B2B2` |
+| CPU | `rgb(17,125,187)` / `#117DBB` |
+| RAM | `rgb(139,18,174)` / `#8B12AE` |
+| Network download, disk R | `rgb(237,165,130)` / `#EDA582` |
+| Network upload, disk W | `rgb(100,200,255)` / `#64C8FF` |
+| Disk, total I/O | `rgb(77,166,12)` / `#4DA60C` |
+| Warning | `rgb(240,85,85)` / `#F05555` |
 | Online | `rgb(100,200,125)` |
 | Offline | `rgb(220,90,80)` |
-| Ожидание | `rgb(130,130,130)` |
+| Waiting | `rgb(130,130,130)` |
 
-Оформление: тёмный фон, небольшое скругление, тонкие разделители, Segoe UI, плотная раскладка. Для веба нужен читаемый CSS-размер шрифта; Rainmeter FontSize=9 нельзя механически считать 9 CSS px.
+Design: dark background, slight rounding, thin separators, Segoe UI, dense layout. The web version needs a readable CSS font size; Rainmeter `FontSize=9` must not be mechanically treated as 9 CSS px.
 
-### 5.4. Предупреждения
+### 5.4. Warnings
 
-- ЦП **≥80%**: число красное.
-- ОЗУ **≥80%**: вся строка значения, включая процент, красная.
-- Занятое место диска **≥80%**: объём, круговая диаграмма и R/W красные.
-- График I/O при этом остаётся зелёным.
-- Когда значение становится ниже 80%, обычный цвет возвращается.
-- Порог применяется к исходному проценту, **до округления для текста**.
-- Для сети нет порога предупреждения.
+- CPU **≥80%**: the number is red.
+- RAM **≥80%**: the entire value, including the percentage, is red.
+- Disk used space **≥80%**: capacity, pie chart, and R/W are red.
+- The I/O chart remains green.
+- When a value drops below 80%, its normal color returns.
+- The threshold is applied to the original percentage, **before rounding for text**.
+- Network has no warning threshold.
 
-Важно: в текущем интерфейсе красный R/W означает предупреждение **о заполнении диска**, а не превышение скорости или процент занятости устройства.
+Important: in the current interface, red R/W means a **disk-usage warning**, not excessive speed or device-utilization percentage.
 
-### 5.5. Графики и размеры
+### 5.5. Charts and dimensions
 
-- ЦП и ОЗУ: линия + полупрозрачная заливка + рамка; фиксированная шкала 0–100%.
-- Сеть: приём и отправка, две линии, общая автоматическая шкала.
-- I/O: одна серия `read + write`, зелёная линия с заливкой, автомасштаб.
-- Заполнение: круговая диаграмма по `disk_percent`.
-- Все линейные графики текущего виджета имеют высоту **36 px**.
-- Высота строки: **88 px**, ширина одной панели: **828 px**.
-- Между панелями: **16 px**.
-- 10 мест: приблизительно **828 × 952 px**; 11–20 мест: **1672 × 952 px** при scale=1.
+- CPU and RAM: line + translucent fill + border; fixed 0–100% scale.
+- Network: receive and send, two lines, shared automatic scale.
+- I/O: one `read + write` series, green line with fill, automatic scale.
+- Capacity: pie chart based on `disk_percent`.
+- All line charts in the current widget are **36 px** high.
+- Row height: **88 px**; width of one panel: **828 px**.
+- Gap between panels: **16 px**.
+- 10 slots: approximately **828 × 952 px**; 11–20 slots: **1672 × 952 px** at scale=1.
 
-Для сайта сохранить иерархию и взаимное расположение, но сделать адаптивную вёрстку: на узком экране не ужимать весь dashboard до нечитаемого состояния.
+For the website, preserve hierarchy and relative placement but use responsive layout: on a narrow screen, do not compress the whole dashboard until it is unreadable.
 
-### 5.6. Адаптивные единицы сети
+### 5.6. Adaptive network units
 
-Исходные значения агента всегда в **Мбит/с**.
+The agent's raw values are always in **Mbit/s**.
 
 ```text
 peak = max(net_recv_mbps, net_sent_mbps)
 
-peak < 1:      отображаем Кбит/с, исходные значения умножаем на 1000
-1 ≤ peak < 1000: отображаем Мбит/с, исходные значения оставляем
-peak ≥ 1000:   отображаем Гбит/с, исходные значения делим на 1000
+peak < 1:       display Kbit/s, multiply raw values by 1000
+1 ≤ peak < 1000: display Mbit/s, leave raw values unchanged
+peak ≥ 1000:    display Gbit/s, divide raw values by 1000
 ```
 
-Оба направления используют одну выбранную единицу. После преобразования округляем до десятых и сохраняем один знак в строке. При нуле — Кбит/с. При снижении скорости единицы переключаются обратно.
+Both directions use the same selected unit. After conversion, round to one decimal place and retain one digit in the string. At zero, use Kbit/s. When speed decreases, switch units back.
 
-**Историю графика хранить в исходных Мбит/с.** Смена единицы подписи не должна менять масштаб уже сохранённых точек относительно новых.
+**Store chart history in raw Mbit/s.** Changing the displayed unit must not change the scale of already stored points relative to new ones.
 
-## 6. Агент и API — готовая основа для веба
+## 6. Agent and API — ready foundation for the website
 
-### 6.1. Маршруты
+### 6.1. Routes
 
-| URL | Формат | Назначение |
+| URL | Format | Purpose |
 |---|---|---|
-| `GET /stats` | Текст | Существующий Rainmeter-протокол |
-| `GET /api/stats` | JSON | Текущие реальные показатели; использовать для сайта |
-| `GET /demo/10`, `/demo/50`, `/demo/80`, `/demo/100` | Текст | Синтетические показатели для Rainmeter |
-| `GET /api/demo/10`, `/api/demo/50`, `/api/demo/80`, `/api/demo/100` | JSON | Синтетические показатели для сайта |
+| `GET /stats` | Text | Existing Rainmeter protocol |
+| `GET /api/stats` | JSON | Current real metrics; use this for the website |
+| `GET /demo/10`, `/demo/50`, `/demo/80`, `/demo/100` | Text | Synthetic metrics for Rainmeter |
+| `GET /api/demo/10`, `/api/demo/50`, `/api/demo/80`, `/api/demo/100` | JSON | Synthetic metrics for the website |
 
-Порт по умолчанию — **5000**, bind-адрес — `0.0.0.0`.
+Default port: **5000**; bind address: `0.0.0.0`.
 
-### 6.2. Пример JSON
+### 6.2. JSON example
 
 ```json
 {
@@ -277,66 +277,66 @@ peak ≥ 1000:   отображаем Гбит/с, исходные значен
 }
 ```
 
-Это иллюстрация контракта, не сохранённые данные конкретной машины.
+This illustrates the contract; it is not saved data from a particular machine.
 
-### 6.3. Поля и смысл
+### 6.3. Fields and meaning
 
-| Поле | Единица | Использование |
+| Field | Unit | Use |
 |---|---|---|
-| `cpu` | % | Загрузка всех CPU в целом, число и график |
-| `ram_percent` | % | Процент от psutil, предупреждение и график |
-| `ram_used_gb` | байты / 1024³ | Занятая память, округлена до десятых |
-| `ram_total_gb` | байты / 1024³ | Общая память, округлена до десятых |
-| `net_recv_mbps` | Мбит/с | Скорость приёма, до шести десятичных знаков |
-| `net_sent_mbps` | Мбит/с | Скорость отправки, до шести десятичных знаков |
-| `hostname` | строка | Имя ОС, не адрес подключения |
-| `disk_percent` | % | Заполнение выбранной файловой системы |
-| `disk_used_gb` | байты / 1024³ | Занятый объём, округлён до десятых |
-| `disk_total_gb` | байты / 1024³ | Общий объём, округлён до десятых |
-| `disk_read_mbps` | **MB/s** | Чтение, до десятых; несмотря на суффикс `mbps`, это мегабайты |
-| `disk_write_mbps` | **MB/s** | Запись, до десятых; несмотря на суффикс `mbps`, это мегабайты |
+| `cpu` | % | Overall load of all CPUs, number and chart |
+| `ram_percent` | % | psutil percentage, warning and chart |
+| `ram_used_gb` | bytes / 1024³ | Used memory, rounded to one decimal |
+| `ram_total_gb` | bytes / 1024³ | Total memory, rounded to one decimal |
+| `net_recv_mbps` | Mbit/s | Receive rate, up to six decimal places |
+| `net_sent_mbps` | Mbit/s | Send rate, up to six decimal places |
+| `hostname` | string | OS name, not the connection address |
+| `disk_percent` | % | Usage of the selected filesystem |
+| `disk_used_gb` | bytes / 1024³ | Used capacity, rounded to one decimal |
+| `disk_total_gb` | bytes / 1024³ | Total capacity, rounded to one decimal |
+| `disk_read_mbps` | **MB/s** | Reads, one decimal; despite the `mbps` suffix, these are megabytes |
+| `disk_write_mbps` | **MB/s** | Writes, one decimal; despite the `mbps` suffix, these are megabytes |
 
-Не делить дисковые скорости на 8 и не трактовать их как Мбит/с. Суммарный дисковый график = `disk_read_mbps + disk_write_mbps`.
+Do not divide disk rates by 8 or interpret them as Mbit/s. Total disk chart = `disk_read_mbps + disk_write_mbps`.
 
-`ram_percent` следует брать из API, а не пересчитывать из округлённых объёмов: на разных ОС семантика `mem.used` и `mem.percent` может различаться.
+Take `ram_percent` from the API instead of recalculating it from rounded capacities: the semantics of `mem.used` and `mem.percent` can differ across operating systems.
 
-### 6.4. Как собираются данные
+### 6.4. How data is collected
 
-- Отдельный daemon-поток выполняет сбор примерно раз в секунду.
-- HTTP-запрос читает готовую копию снимка под блокировкой; не запускает новый дорогостоящий сбор.
-- Время для расчёта скоростей — `time.monotonic()`.
-- Сеть: разность байтов ×8 / 1 000 000 / фактически прошедшие секунды.
-- Диски: разность байтов / 1 000 000 / фактически прошедшие секунды.
-- Если счётчик сбросился или интервал не положительный, возвращается 0 вместо отрицательной скорости.
-- Сеть суммируется по интерфейсам, возвращаемым psutil, без отдельного выбора интерфейса. Это не гарантированно трафик одного внешнего NIC; виртуальные интерфейсы могут влиять на итог.
-- I/O суммируется по дисковым устройствам, возвращаемым psutil. Это не I/O одной точки монтирования и не `% disk busy`.
-- `SERVER_STATS_DISK` определяет только файловую систему для заполнения, не набор устройств для I/O.
+- A separate daemon thread collects data approximately once per second.
+- An HTTP request reads a ready snapshot copy under a lock; it does not start another expensive collection.
+- Rate timing uses `time.monotonic()`.
+- Network: byte difference ×8 / 1,000,000 / actual elapsed seconds.
+- Disks: byte difference / 1,000,000 / actual elapsed seconds.
+- If a counter reset or the interval is non-positive, return 0 rather than a negative rate.
+- Network is summed over interfaces returned by psutil, with no separate interface selection. This is not guaranteed to be traffic from one external NIC; virtual interfaces can affect the total.
+- I/O is summed over disk devices returned by psutil. It is not I/O for one mount point and is not `% disk busy`.
+- `SERVER_STATS_DISK` selects only the filesystem used for capacity, not the device set used for I/O.
 
-### 6.5. Ограничения текущего API
+### 6.5. Current API limitations
 
-- Нет времени последнего успешного сбора, порядкового номера снимка или версии схемы.
-- Нет истории, авторизации, TLS, WebSocket/SSE, CORS-настройки или управления машинами.
-- Нет идентификатора ВМ в снимке: `id` нужно брать из реестра машин, не подменять hostname.
-- В начале работы числовые поля могут быть нулевыми до первого сбора.
-- При обработанной ошибке сборщика остаётся предыдущий снимок. Поэтому **HTTP 200 не доказывает свежесть метрик**.
-- При ошибке чтения заполнения диска возвращаются нули: нынешний API не позволяет отличить это от реальных нулей отдельным флагом.
-- Нет uptime, температуры, процессов, SMART, latency, списка разделов и интерфейсов.
+- No last-successful-collection time, snapshot sequence number, or schema version.
+- No history, authentication, TLS, WebSocket/SSE, CORS configuration, or machine management.
+- No VM identifier in the snapshot: take `id` from the machine registry; do not substitute hostname.
+- Numeric fields may be zero at startup until the first collection.
+- After a handled collector error, the previous snapshot remains. Therefore **HTTP 200 does not prove that metrics are fresh**.
+- On a disk-capacity read error, zeros are returned: the current API cannot distinguish that from real zero values with a separate flag.
+- No uptime, temperature, processes, SMART, latency, partition list, or interface list.
 
-Для полноценного веб-мониторинга желательно расширить API метаданными свежести и валидности, сохранив совместимость существующих полей и `/stats`.
+For complete web monitoring, extend the API with freshness and validity metadata while preserving existing fields and `/stats` compatibility.
 
-### 6.6. Старый текстовый протокол
+### 6.6. Old text protocol
 
-Порядок полей фиксирован:
+The field order is fixed:
 
 ```text
 CPU;RAM;RAM_USED;RAM_TOTAL;NET_RECV;NET_SENT;HOSTNAME;DISK_PERCENT;DISK_USED;DISK_TOTAL;DISK_READ;DISK_WRITE
 ```
 
-Каждый элемент имеет вид `KEY:value`, элементы разделяются `;`. Первые шесть полей сохранены для старого клиента. Новому агрегированному Rainmeter-скину нужны все расширенные поля. Для веба этот протокол использовать не нужно: JSON проще и надёжнее.
+Each item has the form `KEY:value`, with items separated by `;`. The first six fields are retained for the old client. The new aggregated Rainmeter skin needs all extended fields. Do not use this protocol for the website: JSON is simpler and more reliable.
 
-## 7. Конфигурация списка машин
+## 7. Machine-list configuration
 
-Пример общего Rainmeter-конфига:
+Example common Rainmeter configuration:
 
 ```json
 {
@@ -363,19 +363,19 @@ CPU;RAM;RAM_USED;RAM_TOTAL;NET_RECV;NET_SENT;HOSTNAME;DISK_PERCENT;DISK_USED;DIS
 }
 ```
 
-- `id`: уникальный стабильный ключ, латиница/цифры/`_`/`-`.
-- `address`: IPv4, IPv6 или DNS-имя.
-- `port`: 1–65535, по умолчанию 5000.
-- `name`: резервная подпись; реальный hostname приходит из агента.
-- `enabled`: отображать/опрашивать или временно исключить.
-- `demo_load`: `10`, `50`, `80`, `100`; отсутствие или `null` означает реальные данные.
-- Порядок в массиве задаёт порядок отображения.
-- `update_seconds`: 1–3600, обычно 2 секунды.
-- `scale`: 0.6–2.0; параметр Rainmeter, не готовый CSS-масштаб сайта.
+- `id`: unique stable key, using Latin letters/digits/`_`/`-`.
+- `address`: IPv4, IPv6, or DNS name.
+- `port`: 1–65535, default 5000.
+- `name`: fallback label; the real hostname comes from the agent.
+- `enabled`: display/poll, or temporarily exclude.
+- `demo_load`: `10`, `50`, `80`, `100`; absent or `null` means real data.
+- Array order controls display order.
+- `update_seconds`: 1–3600, usually 2 seconds.
+- `scale`: 0.6–2.0; a Rainmeter parameter, not a ready-made CSS scale for the website.
 
-Для сайта можно импортировать этот список, но хранить его на backend. Автоматической синхронизации сайта и JSON сейчас нет.
+The website can import this list, but should store it on the backend. There is currently no automatic synchronization between the website and JSON.
 
-Команды генератора из корня проекта:
+Generator commands from the project root:
 
 ```powershell
 py ServerStats/@Resources/Aggregate/generate.py
@@ -384,37 +384,37 @@ py ServerStats/@Resources/Aggregate/generate.py --refresh add 192.168.1.25 --id 
 py ServerStats/@Resources/Aggregate/generate.py --refresh remove vm25
 ```
 
-**Не перезаписывать установленный пользовательский `servers.json` при обновлении проекта.** Изменения внешнего вида вносить в `generate.py`, затем пересоздавать INI.
+**Do not overwrite an installed user's `servers.json` when updating the project.** Make appearance changes in `generate.py`, then regenerate the INI files.
 
-## 8. Запуск и развёртывание агентов
+## 8. Running and deploying agents
 
 ### 8.1. Windows
 
-Для разработки:
+For development:
 
 ```powershell
 py -m pip install -r requirements.txt
 py server_stats.py
 ```
 
-Для ВМ используется EXE. Сборка:
+The EXE is used for VMs. Build:
 
 ```powershell
 py -m pip install pyinstaller
 py -m PyInstaller --noconfirm --onefile --console server_stats.py
-# Результат: dist/server_stats.exe
+# Result: dist/server_stats.exe
 ```
 
-Переменные окружения:
+Environment variables:
 
-| Переменная | Назначение |
+| Variable | Purpose |
 |---|---|
-| `SERVER_STATS_HOST` | Адрес прослушивания, по умолчанию 0.0.0.0 |
-| `SERVER_STATS_PORT` | Порт, по умолчанию 5000 |
-| `SERVER_STATS_DISK` | Путь для заполнения диска; по умолчанию системный корень |
-| `SERVER_STATS_PROCFS` | Linux-путь procfs; для обычного Windows EXE не нужен |
+| `SERVER_STATS_HOST` | Listen address, default 0.0.0.0 |
+| `SERVER_STATS_PORT` | Port, default 5000 |
+| `SERVER_STATS_DISK` | Path whose capacity is measured; system root by default |
+| `SERVER_STATS_PROCFS` | Linux procfs path; not needed for a normal Windows EXE |
 
-Пример:
+Example:
 
 ```powershell
 $env:SERVER_STATS_DISK = 'D:\'
@@ -422,138 +422,138 @@ $env:SERVER_STATS_PORT = '5000'
 .\server_stats.exe
 ```
 
-В Windows EXE используется встроенный Flask-сервер. Автоустановка службы Windows в проекте не реализована.
+The Windows EXE uses the built-in Flask server. Automatic Windows-service installation is not implemented.
 
-**История артефактов:** в ходе работы корневой EXE был занят работающим процессом, поэтому не всегда мог быть заменён. Ранее в README упоминался `server_stats_updated.exe`; на момент подготовки этого документа такого файла в корне нет. Доступны корневой EXE и `dist/server_stats.exe`. Не считать бинарник актуальным только по имени: проверить `/api/stats`, демо-маршрут и при необходимости пересобрать из текущего исходника. Запущенный EXE автоматически не останавливать.
+**Artifact history:** during development, the root EXE was held by a running process and therefore could not always be replaced. Earlier README text mentioned `server_stats_updated.exe`; at the time this document was prepared, that file did not exist in the root. The root EXE and `dist/server_stats.exe` are available. Do not consider a binary current based only on its name: check `/api/stats`, the demo route, and rebuild from the current source if necessary. Do not stop a running EXE automatically.
 
-### 8.2. Linux VM — настоящие метрики виртуалки
+### 8.2. Linux VM — real VM metrics
 
 ```bash
 docker compose up -d --build server-stats-linux
 curl http://127.0.0.1:5000/api/stats
 ```
 
-- `network_mode: host` — сеть виртуалки.
-- `uts: host` — hostname виртуалки.
-- `/proc` → `/host/proc`, `/sys` → `/sys`, `/` → `/host/root`, только чтение.
-- psutil направлен на `/host/proc`.
-- По умолчанию заполнение берётся для `/host/root`.
-- Для хостового `/data` указать `SERVER_STATS_DISK=/host/root/data`.
-- Rootless Docker для такого мониторинга хоста не поддерживается.
+- `network_mode: host` — the VM's network.
+- `uts: host` — the VM's hostname.
+- `/proc` → `/host/proc`, `/sys` → `/sys`, `/` → `/host/root`, read-only.
+- psutil is pointed at `/host/proc`.
+- By default, capacity is measured for `/host/root`.
+- For host `/data`, set `SERVER_STATS_DISK=/host/root/data`.
+- Rootless Docker is not supported for this host-monitoring setup.
 
-Gunicorn запускает один worker с четырьмя потоками обработки запросов; сборщик запускается в `post_worker_init`. Простое увеличение числа workers создаст отдельные снимки и сборщики и требует пересмотра архитектуры.
+Gunicorn starts one worker with four request-processing threads; the collector starts in `post_worker_init`. Simply increasing workers creates separate snapshots and collectors and requires architectural review.
 
-Контейнер: UID 65534, read-only root filesystem, `cap_drop: ALL`, `no-new-privileges`, tmpfs для `/tmp`, healthcheck, ограничение логов 5 MB ×2, `restart: unless-stopped`. Healthcheck проверяет доступность API и базовые значения, **не гарантирует свежесть снимка**. `unhealthy` сам по себе не означает автоматический перезапуск.
+Container: UID 65534, read-only root filesystem, `cap_drop: ALL`, `no-new-privileges`, tmpfs for `/tmp`, healthcheck, 5 MB ×2 log limit, `restart: unless-stopped`. The healthcheck tests API availability and basic values, **not snapshot freshness**. `unhealthy` alone does not imply an automatic restart.
 
-Bind-mount системных каталогов, особенно корня хоста, — осознанный доступ на чтение к данным, доступным этому UID. Это не полная изоляция от хоста.
+Bind-mounting system directories, especially the host root, is deliberate read access to data available to this UID. It is not complete isolation from the host.
 
-### 8.3. Docker Desktop на Windows — только проверочный режим
+### 8.3. Docker Desktop on Windows — verification mode only
 
 ```powershell
 docker compose up -d --build
 curl.exe http://127.0.0.1:5000/api/stats
 ```
 
-Сервис `server-stats` использует bridge и публикацию порта по умолчанию на `127.0.0.1:5000`.
+The `server-stats` service uses bridge networking and publishes the port by default at `127.0.0.1:5000`.
 
-**Показывает Linux-среду Docker Desktop, не Windows. Для Windows-метрик нужен EXE.**
+**It shows the Docker Desktop Linux environment, not Windows. The EXE is required for Windows metrics.**
 
-Не запускать оба Compose-сервиса одновременно. Для Linux выбирать сервис явно; `COMPOSE_PROFILES=linux` вместе с обычным `up` может выбрать оба.
+Do not run both Compose services at once. Select the Linux service explicitly; `COMPOSE_PROFILES=linux` together with ordinary `up` may select both.
 
-В ходе работы одна из попыток пересборки Docker не завершилась из-за недоступного Docker Desktop daemon. Наличие конфигурационных тестов не является доказательством успешного запуска последнего образа на реальной ВМ.
+During development, one Docker rebuild attempt did not finish because the Docker Desktop daemon was unavailable. Configuration tests do not prove that the latest image successfully runs on a real VM.
 
-## 9. Демонстрационный режим
+## 9. Demo mode
 
-Демо — **не стресс-тест**. Маршруты не создают реальную нагрузку и не изменяют живые показатели.
+Demo is **not a stress test**. The routes create no real load and do not alter live metrics.
 
-Для состояния N из 10/50/80/100:
+For state N of 10/50/80/100:
 
 - hostname = `DEMO-N`;
-- ЦП, ОЗУ и заполнение диска = N%;
-- общая память = 16 двоичных GB, занято N%;
-- общий диск = 256 двоичных GB, занято N%;
-- сеть в каждом направлении = N Мбит/с;
-- чтение и запись по N MB/s, сумма I/O = 2N MB/s.
+- CPU, RAM, and disk usage = N%;
+- total memory = 16 binary GB, N% used;
+- total disk = 256 binary GB, N% used;
+- network in each direction = N Mbit/s;
+- reads and writes = N MB/s each, total I/O = 2N MB/s.
 
-Неизвестное демо-состояние возвращает 404. Один агент может обслуживать все четыре демонстрационные строки. Использовать для проверки обычных цветов и красного предупреждения на 80/100. Значения постоянные, поэтому график после заполнения истории горизонтальный.
+An unknown demo state returns 404. One agent can serve all four demo rows. Use them to check normal colors and the red warning at 80/100. Values are constant, so the chart becomes horizontal after history fills.
 
-Для сайта использовать JSON-маршруты `/api/demo/N` и обязательно показывать отметку DEMO. Для тестирования меняющейся нагрузки и переключения сетевых единиц потребуются отдельные тестовые последовательности; нынешние четыре демо-маршрута их не генерируют.
+For the website, use `/api/demo/N` JSON routes and always show a DEMO marker. Testing changing load and network-unit switching requires separate test sequences; the current four demo routes do not generate them.
 
-## 10. Память и стабильность
+## 10. Memory and stability
 
-Нативные Rainmeter-графики хранят фиксированное число точек по ширине, а не бесконечный массив. Статические метры имеют `UpdateDivider=-1`, отключён автоматический перерасчёт размера окна, сокращено применение DynamicVariables.
+Native Rainmeter charts store a fixed number of points based on width, not an infinite array. Static meters use `UpdateDivider=-1`, automatic window-size recalculation is disabled, and use of DynamicVariables is reduced.
 
-HTTP-callback меняет только переменную online. Отдельная мера обрабатывает переход состояния, переключая видимость и интервал повторного опроса. Нет `!UpdateMeter *`/`!Redraw` на каждый ответ, пересоздания статусного Shape, авто-перезапуска или принудительного trimming памяти.
+The HTTP callback changes only the online variable. A separate measure handles state transitions, switching visibility and retry intervals. There is no `!UpdateMeter *`/`!Redraw` on every response, status-Shape recreation, automatic restart, or forced memory trimming.
 
-WebParser: `ForceReload | NoCacheWrite | NoCookies`, без прокси. После ошибки интервал повторного опроса — `max(30, update_seconds)`, после успеха — обычный.
+WebParser: `ForceReload | NoCacheWrite | NoCookies`, without a proxy. After an error, the retry interval is `max(30, update_seconds)`; after success, it is normal.
 
-Измерение:
+Measurement:
 
 ```powershell
 py tests/monitor_rainmeter_memory.py --minutes 60 --csv rainmeter-memory.csv
 ```
 
-Инструмент пишет Private Bytes, working set и handles в CSV, не накапливает всю историю в памяти и не вмешивается в процесс. Оценивать длительный тренд Private Bytes, желательно при отключённых остальных скинах.
+The tool writes Private Bytes, working set, and handles to CSV, does not accumulate the full history in memory, and does not interfere with the process. Evaluate the long-term Private Bytes trend, preferably with other skins disabled.
 
-Для веба тот же принцип: ограниченный буфер точек, освобождение ресурсов графиков, отсутствие новых таймеров и подписок при каждом рендере. Принудительный reload страницы не является исправлением утечки.
+Use the same principle for the website: a bounded point buffer, release chart resources, and no new timers or subscriptions on every render. A forced page reload is not a leak fix.
 
-## 11. Предлагаемая архитектура веб-раздела — ещё не реализована
+## 11. Proposed web-section architecture — not implemented yet
 
-### 11.1. Рекомендуемая схема
+### 11.1. Recommended design
 
 ```text
-Агенты ВМ: GET /api/stats
+VM agents: GET /api/stats
            │
            ▼
-Backend сайта / единый collector
-- доверенный реестр машин
-- ограниченная параллельность и тайм-ауты
-- проверка схемы, статусы и время получения
-- последний снимок + ограниченная история
+Website backend / shared collector
+- trusted machine registry
+- bounded concurrency and timeouts
+- schema validation, statuses, and receipt time
+- latest snapshot + bounded history
            │
            ▼
-Авторизованное API сайта
+Authorized website API
            │ HTTP polling / SSE / WebSocket
            ▼
-Веб-dashboard: строки, статусы, графики
+Web dashboard: rows, statuses, charts
 ```
 
-Backend опрашивает каждую ВМ **один раз на интервал независимо от числа открытых браузеров**. Пользователи получают общий результат. Не привязывать отдельный сборщик к каждому HTTP-запросу страницы.
+The backend polls each VM **once per interval regardless of the number of open browsers**. Users receive the shared result. Do not attach a separate collector to every page HTTP request.
 
-Почему не делать прямые запросы из браузера к агентам:
+Why not request agents directly from browsers:
 
-- Нет CORS-настройки агента.
-- HTTPS-страница не должна обращаться к HTTP-агентам через mixed content.
-- У пользователей может не быть доступа в сеть ВМ.
-- Адреса внутренней инфраструктуры не стоит раскрывать публично.
-- Каждый браузер умножит число запросов к ВМ.
-- Авторизацию и ограничения доступа удобнее централизовать.
+- The agent has no CORS configuration.
+- An HTTPS page must not access HTTP agents through mixed content.
+- Users may not have access to the VM network.
+- Internal infrastructure addresses should not be exposed publicly.
+- Each browser would multiply requests to VMs.
+- Centralized authorization and access limits are easier.
 
-Не исправлять это публикацией всех агентов в интернет или разрешением CORS `*`.
+Do not solve this by publishing every agent to the internet or allowing CORS `*`.
 
-### 11.2. Что переиспользовать
+### 11.2. What to reuse
 
-**Использовать без переделки визуальной логики:**
+**Use without changing the visual logic:**
 
-- `/api/stats` и `/api/demo/N`;
-- состав метрик, единицы и правила округления;
-- порог предупреждения 80%;
-- адаптивные единицы сети;
-- итоговые строки с пробелами;
-- цвета, состав графиков, разделение I/O и заполнения диска;
-- реестр машин, импортированный из `servers.json`.
+- `/api/stats` and `/api/demo/N`;
+- metric composition, units, and rounding rules;
+- the 80% warning threshold;
+- adaptive network units;
+- final strings with spaces;
+- colors, chart composition, and separation of I/O from disk capacity;
+- the machine registry imported from `servers.json`.
 
-**Не переносить буквально:**
+**Do not port literally:**
 
-- Rainmeter INI, WebParser, bangs и UTF-16 — это специфика клиента Rainmeter;
-- 20 файлов размеров — на сайте достаточно одного адаптивного компонента;
-- `scale` — вместо него нужны CSS и responsive layout;
-- отсутствие метаданных свежести — для сайта это нужно доработать;
-- хранение истории только в графическом компоненте, если требуется история после перезагрузки.
+- Rainmeter INI, WebParser, bangs, and UTF-16 — these are Rainmeter-client specifics;
+- 20 size-specific files — one responsive component is enough on the website;
+- `scale` — use CSS and responsive layout instead;
+- missing freshness metadata — the website needs this improved;
+- history stored only in the chart component, if history must survive reloads.
 
-### 11.3. Предлагаемый контракт backend сайта
+### 11.3. Proposed website-backend contract
 
-Пример **нового проектируемого**, а не существующего ответа:
+Example of a **new designed response, not an existing one**:
 
 ```json
 {
@@ -587,42 +587,42 @@ Backend опрашивает каждую ВМ **один раз на интер
 }
 ```
 
-`last_received_at` — время успешного получения ответа backend, **не время сбора агентом**. Для достоверной проверки свежести сбора отдельно добавить в агент timestamp/sequence и состояние сборщика. Все даты в примерах условные.
+`last_received_at` is the time the backend successfully received the response, **not the agent's collection time**. To reliably check collection freshness, add a timestamp/sequence and collector state to the agent separately. All dates in examples are illustrative.
 
-Предлагаемые состояния:
+Suggested states:
 
-- `waiting`: ещё нет успешного ответа;
-- `online`: получен и проверен корректный ответ;
-- `offline`: тайм-аут, сетевой сбой или ошибка запроса;
-- `incompatible`: отсутствуют нужные поля или типы неверны;
-- `stale`: снимок получен давно либо агент сообщил устаревший сбор;
-- `disabled`: машина выключена из мониторинга администратором.
+- `waiting`: no successful response yet;
+- `online`: a valid, checked response was received;
+- `offline`: timeout, network failure, or request error;
+- `incompatible`: required fields are missing or types are wrong;
+- `stale`: the snapshot was received long ago or the agent reported stale collection;
+- `disabled`: the administrator disabled the machine for monitoring.
 
-Это расширение по сравнению с тремя индикаторами текущего виджета. При offline/stale не показывать старые значения как свежие. Последний известный снимок допустим только с явной пометкой и временем.
+This extends the three indicators in the current widget. For offline/stale, do not show old values as fresh. A last-known snapshot is acceptable only with an explicit marker and timestamp.
 
-### 11.4. Опрос и история
+### 11.4. Polling and history
 
-Начальные рекомендации:
+Initial recommendations:
 
-- Сбор агентом: существующий интервал около 1 секунды.
-- Опрос backend: обычно 2 секунды, как в виджете.
-- Явный сетевой тайм-аут и предел параллельных запросов.
-- На одну машину не допускать перекрывающихся запросов без необходимости.
-- Ошибка одной ВМ не блокирует остальных.
-- После ошибок увеличивать интервал повторов; ориентир текущего виджета — 30 секунд.
-- Для графика держать кольцевой буфер, например 120–300 точек на машину.
-- Временные метки обязательны: не считать, что расстояние между точками всегда одинаковое.
-- При разрыве связи ставить пропуск/null, а не искусственный ноль.
-- Нулевая скорость при доступном агенте — нормальное измерение.
-- Если позже появится timestamp/sequence снимка, использовать его для распознавания повторов.
+- Agent collection: the existing interval of about 1 second.
+- Backend polling: usually 2 seconds, as in the widget.
+- Explicit network timeout and concurrency limit.
+- Avoid overlapping requests to one machine unless necessary.
+- One VM's failure must not block the others.
+- Increase retry intervals after errors; the current widget's guide is 30 seconds.
+- Keep a ring buffer, for example 120–300 points per machine.
+- Timestamps are mandatory: do not assume point spacing is always equal.
+- On connection loss, insert a gap/null rather than an artificial zero.
+- Zero speed from an available agent is a valid measurement.
+- If a snapshot timestamp/sequence is added later, use it to detect duplicates.
 
-Хранить исходные числовые значения, форматирование выполнять при выводе. В частности, не записывать в историю строки `12.3 Мбит/с`.
+Store raw numeric values and format them for display. In particular, do not store strings such as `12.3 Mbit/s` in history.
 
-Если нужна история за часы/дни: отдельное хранилище, retention, агрегация старых точек и лимит диапазона запроса. В текущем проекте этого нет. Не создавать бесконечные массивы в браузере или в памяти backend.
+For hours/days of history: use separate storage, retention, aggregation of old points, and a query-range limit. The current project has none of these. Do not create infinite arrays in the browser or backend memory.
 
-### 11.5. Компоненты интерфейса
+### 11.5. Interface components
 
-Возможное разбиение, независимо от выбранного фреймворка:
+Possible decomposition, regardless of framework:
 
 ```text
 MonitoringPage
@@ -637,71 +637,71 @@ MonitoringPage
     DiskCapacityMetric + PieChart
 ```
 
-Общие утилиты: формат объёмов, формат сети, формат I/O, проверка порога, нормализация ответа, ограниченный буфер истории.
+Common utilities: capacity formatting, network formatting, I/O formatting, threshold checking, response normalization, and bounded history buffering.
 
-Предусмотреть:
+Provide for:
 
-- сортировку по конфигурации как исходный порядок;
-- управление включённостью и добавление/удаление машин только с нужными правами;
-- подсказки с полным hostname, временем обновления и точными значениями;
-- обозначение DEMO;
-- разрыв графика при недоступности;
-- отсутствие дублирующихся таймеров при переключении вкладок/маршрутов;
-- корректное удаление графиков и подписок при размонтировании;
-- читаемую адаптацию на мобильном экране;
-- текстовый статус дополнительно к цвету точки.
+- configuration-order sorting as the original order;
+- enabling/disabling and adding/removing machines only with appropriate permissions;
+- tooltips with full hostname, update time, and exact values;
+- DEMO marking;
+- chart gaps when unavailable;
+- no duplicate timers when switching tabs/routes;
+- correct removal of charts and subscriptions on unmount;
+- readable mobile adaptation;
+- text status in addition to the colored dot.
 
-### 11.6. Безопасность
+### 11.6. Security
 
-В текущем агенте **нет аутентификации и TLS**. Разрешать порт только доверенному collector/Rainmeter через LAN/VPN и firewall. Агент не предназначен для прямого доступа из интернета.
+The current agent has **no authentication or TLS**. Allow the port only to a trusted collector/Rainmeter through LAN/VPN and firewall. The agent is not intended for direct internet access.
 
-Для сайта:
+For the website:
 
-- авторизовать просмотр инфраструктурных метрик;
-- отдельно ограничить редактирование реестра;
-- браузер общается с backend сайта по HTTPS;
-- между backend и агентами использовать закрытую сеть/VPN либо доработанный защищённый транспорт;
-- не принимать произвольный URL от пользователя для server-side fetch;
-- проверять адреса/порты по разрешённому реестру или сетям, защищаться от SSRF, редиректов и DNS rebinding;
-- hostname и другие строки выводить как текст, не вставлять в HTML;
-- проверять типы, конечность и допустимые диапазоны метрик;
-- ограничивать размер ответа, тайм-ауты и количество одновременных соединений;
-- не отдавать клиенту секреты и необработанные внутренние stack trace;
-- для cookie-сессий защитить изменяющие запросы от CSRF.
+- authorize viewing infrastructure metrics;
+- restrict registry editing separately;
+- browser communicates with the website backend over HTTPS;
+- use a private network/VPN or improved secure transport between backend and agents;
+- do not accept an arbitrary user-supplied URL for server-side fetches;
+- validate addresses/ports against an allowlisted registry or networks, and protect against SSRF, redirects, and DNS rebinding;
+- render hostnames and other strings as text, never inject them into HTML;
+- validate metric types, finiteness, and allowed ranges;
+- limit response size, timeouts, and concurrent connections;
+- do not return secrets or raw internal stack traces to clients;
+- protect state-changing cookie-session requests against CSRF.
 
-Текущая валидация Rainmeter-конфига не является готовой SSRF-защитой веб-backend.
+The current Rainmeter-configuration validation is not a ready SSRF defense for a web backend.
 
-## 12. Проверки и критерии готовности веб-переноса
+## 12. Checks and web-migration readiness criteria
 
-### Уже существующие тесты
+### Existing tests
 
 ```powershell
 py -m unittest discover -s tests -q
 ```
 
-На момент последних изменений: **33 успешных теста**. Проверяются агент, протокол, расчёт скоростей, демо, конфигурация, генерация размеров, позиционирование, единицы, форматы строк, предупреждения и Docker-настройки. Это не browser end-to-end тесты и не гарантия работы реального Docker daemon.
+At the time of the latest changes: **33 tests passed**. They check the agent, protocol, rate calculation, demos, configuration, size generation, positioning, units, string formats, warnings, and Docker settings. They are not browser end-to-end tests and do not guarantee that a real Docker daemon works.
 
-### Что дополнительно проверить для сайта
+### Additional website checks
 
-1. Windows EXE и Linux Docker отдают нужную JSON-схему.
-2. В списке 1, 10, 11 и 20 машин раскладка остаётся читаемой.
-3. Сохраняются точные форматы:
+1. Windows EXE and Linux Docker provide the required JSON schema.
+2. With 1, 10, 11, and 20 machines, the layout remains readable.
+3. Exact formats are preserved:
    - `R 0.0 W 0.0 MB/s`;
    - `3.2 / 8.0 GB (40%)`;
    - `128.0 / 256.0 GB`.
-4. Текст и заголовки центрированы относительно графиков, hostname/IP слева.
-5. Порог 80% срабатывает и снимается; значение 79.9 не считается 80 только из-за отображаемого округления.
-6. Заполнение диска и дисковый throughput не смешиваются.
-7. Единицы сети корректны около 1 и 1000 Мбит/с, при нуле и при обратном переключении.
-8. График сети не искажается при смене единиц.
-9. Offline/incompatible не выглядят как реальный ноль и не оставляют устаревшие цифры «живыми».
-10. Один недоступный агент не задерживает всю панель.
-11. Несколько открытых пользователей не умножают опрос каждой ВМ.
-12. История ограничена, память не растёт бесконечно за несколько часов.
-13. DEMO-10/50/80/100 явно отмечены и дают ожидаемые значения.
-14. Проверены narrow/mobile layout, длинные hostname, большие объёмы и высокие скорости без обрезания текста.
-15. Доступ и редактирование ограничены правами, SSRF и XSS закрыты.
+4. Text and headers are centered relative to charts; hostname/IP is on the left.
+5. The 80% threshold activates and clears; 79.9 is not treated as 80 solely because of display rounding.
+6. Disk capacity and disk throughput are not mixed.
+7. Network units are correct around 1 and 1000 Mbit/s, at zero, and when switching back.
+8. The network chart is not distorted when units change.
+9. Offline/incompatible states do not look like real zero and do not leave stale numbers appearing “live”.
+10. One unreachable agent does not delay the whole dashboard.
+11. Multiple open users do not multiply polling of every VM.
+12. History is bounded; memory does not grow indefinitely over several hours.
+13. DEMO-10/50/80/100 are clearly marked and provide expected values.
+14. Narrow/mobile layout, long hostnames, large capacities, and high speeds are checked without text clipping.
+15. Access and editing are permission-limited; SSRF and XSS are blocked.
 
-## 13. Краткая постановка следующему разработчику
+## 13. Brief assignment for the next developer
 
-> Нужно встроить в существующий сайт раздел мониторинга Windows- и Linux-ВМ по образцу ServerStats Rainmeter. Агент уже есть в `server_stats.py`: реальные показатели в `/api/stats`, демо в `/api/demo/{10,50,80,100}`. Состав строки: hostname/IP со статусом, ЦП с графиком, ОЗУ с графиком, сеть приём/отправка с двухлинейным графиком, R/W с графиком суммы, справа заполнение диска круговой диаграммой и объём под ней. Сохранить цвета, предупреждение от 80%, адаптивные единицы сети и согласованные пробелы. Точные примеры: `R 0.0 W 0.0 MB/s`, `3.2 / 8.0 GB (40%)`, `128.0 / 256.0 GB`. Значения центрировать относительно графиков; hostname/IP оставить слева. Backend сайта должен централизованно опрашивать доверенный реестр агентов, проверять ответы и выдавать браузеру общий результат. Не открывать агентов в интернет и не делать прямые браузерные запросы к внутренним IP. Историю ограничить, недоступность не заменять нулями. Текущий API не сообщает время сбора — не путать доступность HTTP со свежестью метрик. Веб-часть в этой папке пока отсутствует; сначала изучить стек целевого сайта и интегрироваться в его авторизацию, API и дизайн-систему.
+> Integrate a monitoring section into the existing website, modeled on the ServerStats Rainmeter monitor for Windows and Linux VMs. The agent already exists in `server_stats.py`: real metrics are at `/api/stats`, demos at `/api/demo/{10,50,80,100}`. The row consists of hostname/IP with status, CPU with chart, RAM with chart, network receive/send with a two-line chart, R/W with a total chart, and disk usage on the right with a pie chart and capacity beneath it. Preserve colors, the 80% warning, adaptive network units, and the agreed spaces. Exact examples: `R 0.0 W 0.0 MB/s`, `3.2 / 8.0 GB (40%)`, `128.0 / 256.0 GB`. Center values relative to charts; keep hostname/IP left-aligned. The website backend must centrally poll a trusted agent registry, validate responses, and provide the shared result to browsers. Do not expose agents to the internet or make direct browser requests to internal IPs. Bound history and do not replace unavailability with zeros. The current API does not report collection time — do not confuse HTTP availability with metric freshness. The web part is not yet present in this folder; first study the target site's stack and integrate with its authorization, API, and design system.

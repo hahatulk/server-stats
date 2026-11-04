@@ -71,6 +71,7 @@ def render(config, slots=None, shared=False):
     configured = len(servers)
     row_count = configured if slots is None else slots
     scale = float(config.get("scale", 1))
+    graph_update_divider = int(config.get("update_seconds", 2))
     row_height = 88
     panel_width = 828
     columns = 2 if row_count > 10 else 1
@@ -95,15 +96,15 @@ def render(config, slots=None, shared=False):
         lines.append("")
     height = 72 + rows_high * row_height if row_count else 120
     section("Rainmeter", Update=1000, AccurateText=1, DynamicWindowSize=0,
-            ContextTitle="Открыть список виртуалок", ContextAction='["notepad.exe" "#@#Aggregate\\servers.json"]',
-            ContextTitle2="Пересобрать и обновить", ContextAction2='["py.exe" "#@#Aggregate\\generate.py" "--refresh"]')
+            ContextTitle="Open VM list", ContextAction='["notepad.exe" "#@#Aggregate\\servers.json"]',
+            ContextTitle2="Rebuild and refresh", ContextAction2='["py.exe" "#@#Aggregate\\generate.py" "--refresh"]')
     section("Metadata", Name="ServerStats Aggregate" + (f" {slots:02d} VM" if slots else ""), Information="Compact VM overview. Configure @Resources/Aggregate/servers.json", Version="1.0")
     section("Variables", BackgroundColor="12,12,12,250", BorderColor="100,100,100,150",
             CPUColor="17,125,187", RAMColor="139,18,174", NetColor="237,165,130", DiskColor="77,166,12",
             WarningColor="240,85,85", DownloadColor="#NetColor#", UploadColor="100,200,255",
             **({"@Include": "#@#Aggregate\\servers.inc"} if shared else {}),
             **{f"VM{i}Online": -1 for i in range(1, len(servers)+1)},
-            **{f"VM{i}NetUnit": "Кбит/с" for i in range(1, len(servers)+1)})
+            **{f"VM{i}NetUnit": "Kbit/s" for i in range(1, len(servers)+1)})
     section("TextStyle", FontFace="Segoe UI", FontSize=px(9), FontColor="255,255,255", AntiAlias=1,
             ClipString=1, H=px(19), DynamicVariables=0, UpdateDivider=-1)
     section("Background", Meter="Shape", UpdateDivider=-1, Shape=f"Rectangle 1,1,{px(width-2)},{px(height-2)},8 | Fill Color #BackgroundColor# | Stroke Color #BorderColor# | StrokeWidth 1")
@@ -114,21 +115,21 @@ def render(config, slots=None, shared=False):
     title = "#HostTitle#" if shared else config.get("host_title", "VIRTUAL MACHINES")
     text("Title", title, 14, 10, width-280, FontSize=px(13), StringStyle="Bold", H=px(25))
     text("Count", f"{configured}/{slots} VM" if slots is not None else f"{configured} VM", width-250, 14, 74, FontColor="178,178,178")
-    text("Edit", "список", width-164, 14, 67, FontColor="178,178,178", SolidColor="255,255,255,1",
-         LeftMouseUpAction='["notepad.exe" "#@#Aggregate\\servers.json"]', ToolTipText="Добавьте / удалите машины в JSON, затем нажмите обновить")
-    text("Rebuild", "обновить", width-88, 14, 78, FontColor="178,178,178", SolidColor="255,255,255,1",
-         LeftMouseUpAction='["py.exe" "#@#Aggregate\\generate.py" "--refresh"]', ToolTipText="Перечитать список и изменить размер (нужен Python Launcher py.exe)")
+    text("Edit", "list", width-164, 14, 67, FontColor="178,178,178", SolidColor="255,255,255,1",
+         LeftMouseUpAction='["notepad.exe" "#@#Aggregate\\servers.json"]', ToolTipText="Add / remove machines in JSON, then click refresh")
+    text("Rebuild", "refresh", width-88, 14, 78, FontColor="178,178,178", SolidColor="255,255,255,1",
+         LeftMouseUpAction='["py.exe" "#@#Aggregate\\generate.py" "--refresh"]', ToolTipText="Reload the list and resize (requires Python Launcher py.exe)")
     for column in range(columns):
-        for name, label, x, w, color in [("Host", "HOSTNAME / IP", 24, 141, "178,178,178"), ("CPU", "ЦП", 176, 48, "#CPUColor#"),
-                ("RAM", "ОЗУ", 236, 148, "#RAMColor#"), ("Net", "СЕТЬ", 398, 146, "#NetColor#"),
-                ("DiskIO", "I/O", 552, 136, "#DiskColor#"), ("Disk", "ДИСК", 696, 118, "#DiskColor#")]:
+        for name, label, x, w, color in [("Host", "HOSTNAME / IP", 24, 141, "178,178,178"), ("CPU", "CPU", 176, 48, "#CPUColor#"),
+                ("RAM", "RAM", 236, 148, "#RAMColor#"), ("Net", "NETWORK", 398, 146, "#NetColor#"),
+                ("DiskIO", "I/O", 552, 136, "#DiskColor#"), ("Disk", "DISK", 696, 118, "#DiskColor#")]:
             text("Column"+("2" if column else "")+name, label, x+column*column_offset, 44, w,
                  FontColor=color, FontSize=px(8), StringAlign="Left" if name == "Host" else "Center")
     if columns == 2:
         section("PanelSeparator", Meter="Shape", UpdateDivider=-1,
                 Shape=f"Line {px(panel_width+8)},{px(44)},{px(panel_width+8)},{px(height-14)} | Stroke Color 255,255,255,35 | StrokeWidth 1")
     if not row_count:
-        text("Empty", "Список пуст. Нажмите «список», добавьте машины и нажмите «обновить».", 24, 82, 710)
+        text("Empty", "The list is empty. Click list, add machines, then click refresh.", 24, 82, 710)
     number = r"([0-9]+(?:\.[0-9]+)?)"
     regexp = "(?s)^CPU:" + number + ";RAM:" + number + ";RAM_USED:" + number + ";RAM_TOTAL:" + number + ";NET_RECV:" + number + ";NET_SENT:" + number + ";HOSTNAME:([^;\\r\\n]+);DISK_PERCENT:" + number + ";DISK_USED:" + number + ";DISK_TOTAL:" + number + ";DISK_READ:" + number + ";DISK_WRITE:" + number + "(?:;|$)"
     for i, server in enumerate(servers, 1):
@@ -167,9 +168,9 @@ def render(config, slots=None, shared=False):
         # their maximum, but never rescale stored graph samples when units change.
         section(p+"NetPeak", Measure="Calc", Formula=f"Max({p}Recv, {p}Sent)", MinValue=0)
         section(p+"NetScale", Measure="Calc", Formula=f"({p}NetPeak >= 1000 ? 1000 : ({p}NetPeak >= 1 ? 1 : 0.001))",
-                IfCondition=f"({p}NetScale = 0.001)", IfTrueAction=f'[!SetVariable {p}NetUnit "Кбит/с"]',
-                IfCondition2=f"({p}NetScale = 1)", IfTrueAction2=f'[!SetVariable {p}NetUnit "Мбит/с"]',
-                IfCondition3=f"({p}NetScale = 1000)", IfTrueAction3=f'[!SetVariable {p}NetUnit "Гбит/с"]')
+                IfCondition=f"({p}NetScale = 0.001)", IfTrueAction=f'[!SetVariable {p}NetUnit "Kbit/s"]',
+                IfCondition2=f"({p}NetScale = 1)", IfTrueAction2=f'[!SetVariable {p}NetUnit "Mbit/s"]',
+                IfCondition3=f"({p}NetScale = 1000)", IfTrueAction3=f'[!SetVariable {p}NetUnit "Gbit/s"]')
         for direction, source in (("Recv", "Recv"), ("Sent", "Sent")):
             section(p+"Net"+direction+"Display", Measure="Calc", Formula=f"Round({p}{source} / {p}NetScale, 1)", MinValue=0, NumOfDecimals=1)
         section(p+"DiskTotalIO", Measure="Calc", Formula=f"{p}DiskRead + {p}DiskWrite", MinValue=0)
@@ -201,38 +202,38 @@ def render(config, slots=None, shared=False):
         text(p+"Name", "%1", 24, y+2, 140, MeasureName=p+"Hostname", UpdateDivider=1, DynamicVariables=1,
              ToolTipText=f"{('#'+p+'Name#') if shared else (server.get('name') or server['id'])} · [{p}Hostname]", StringStyle="Bold")
         text(p+"Address", f"#{p}Address#" if shared else address, 24, y+24, 140, FontColor="178,178,178", FontSize=px(8))
-        text(p+"Offline", "Ожидание / недоступен · нужен новый агент", 176, y+15, 610, FontColor="200,125,105")
+        text(p+"Offline", "Waiting / unavailable · check agent version", 176, y+15, 610, FontColor="200,125,105")
         def data(name, value, x, yy, w, **opts):
             text(p+name, value, x, yy, w, Group=group, Hidden=1, UpdateDivider=1, StringAlign="Center", **opts)
         data("CPUValue", "%1%", 176, y+3, 48, MeasureName=p+"CPU", NumOfDecimals=0, FontColor="178,178,178")
         data("RAMValue", f"%1 / %2 GB ([{p}RAM:0]%)", 236, y+3, 148,
              MeasureName=p+"RAMUsed", MeasureName2=p+"RAMTotal", NumOfDecimals=1, FontSize=px(9), FontColor="178,178,178", DynamicVariables=1,
-             ToolTipText=f"ОЗУ: [{p}RAMUsed] / [{p}RAMTotal] GB ([{p}RAM:0]%)")
+             ToolTipText=f"RAM: [{p}RAMUsed] / [{p}RAMTotal] GB ([{p}RAM:0]%)")
         data("NetValue", f"↓%1 ↑%2 #{p}NetUnit#", 398, y+3, 146, MeasureName=p+"NetRecvDisplay", MeasureName2=p+"NetSentDisplay",
              NumOfDecimals=1, FontSize=px(9), FontColor="178,178,178", DynamicVariables=1,
              InlineSetting="Color | #DownloadColor#", InlinePattern=r"↓[0-9.]+",
              InlineSetting2="Color | #UploadColor#", InlinePattern2=r"↑[0-9.]+",
-             ToolTipText=f"Приём: [{p}NetRecvDisplay:1] #{p}NetUnit# · Отправка: [{p}NetSentDisplay:1] #{p}NetUnit#")
+             ToolTipText=f"Download: [{p}NetRecvDisplay:1] #{p}NetUnit# · Upload: [{p}NetSentDisplay:1] #{p}NetUnit#")
         section(p+"NetGraph", Meter="Line", MeasureName=p+"Recv", MeasureName2=p+"Sent", LineCount=2,
                 X=px(399), Y=px(y+24), W=px(144), H=px(36), LineWidth=1,
                 LineColor="#DownloadColor#", LineColor2="#UploadColor#", AutoScale=1, AntiAlias=1,
-                UpdateDivider=1, Group=group, Hidden=1, DynamicVariables=1,
-                ToolTipText=f"Приём: [{p}NetRecvDisplay:1] #{p}NetUnit# · Отправка: [{p}NetSentDisplay:1] #{p}NetUnit# (автомасштаб)")
+                UpdateDivider=graph_update_divider, Group=group, Hidden=1, DynamicVariables=1,
+                ToolTipText=f"Download: [{p}NetRecvDisplay:1] #{p}NetUnit# · Upload: [{p}NetSentDisplay:1] #{p}NetUnit# (autoscale)")
         section(p+"NetGraphFrame", Meter="Shape", UpdateDivider=-1, Group=group, Hidden=1,
                 Shape=f"Rectangle {px(398)},{px(y+23)},{px(146)},{px(38)} | Fill Color 0,0,0,0 | Stroke Color #NetColor# | StrokeWidth 1")
         data("DiskDetail", "%1 / %2 GB", 690, y+46, 130, MeasureName=p+"DiskUsed", MeasureName2=p+"DiskTotal",
              NumOfDecimals=1, FontSize=px(9), FontColor="178,178,178", DynamicVariables=1,
-             ToolTipText=f"Занято: [{p}DiskUsed] / [{p}DiskTotal] GB")
+             ToolTipText=f"Used: [{p}DiskUsed] / [{p}DiskTotal] GB")
         data("DiskIO", "R %1 W %2 MB/s", 552, y+3, 136, MeasureName=p+"DiskRead", MeasureName2=p+"DiskWrite",
              NumOfDecimals=1, FontSize=px(9), H=px(19), FontColor="#DiskColor#", DynamicVariables=1,
              InlineSetting="Color | #DownloadColor#", InlinePattern=r"R [0-9.]+",
              InlineSetting2="Color | #UploadColor#", InlinePattern2=r"W [0-9.]+",
-             ToolTipText=f"Чтение: [{p}DiskRead] MB/s · Запись: [{p}DiskWrite] MB/s (все диски ВМ)")
+             ToolTipText=f"Read: [{p}DiskRead] MB/s · Write: [{p}DiskWrite] MB/s (all VM disks)")
         # Native Rainmeter graphs retain only a fixed-width window of samples.
         # No Python/Lua history, growing paths or per-response geometry rebuilding.
         for metric, x, w, color in [("CPU",176,48,"CPUColor"), ("RAM",236,148,"RAMColor")]:
             common = dict(MeasureName=p+metric, X=px(x+1), Y=px(y+24),
-                          W=px(w-2), H=px(36), UpdateDivider=1, AntiAlias=1,
+                          W=px(w-2), H=px(36), UpdateDivider=graph_update_divider, AntiAlias=1,
                           AutoScale=0, Group=group, Hidden=1)
             section(p+metric+"GraphFill", Meter="Histogram", PrimaryColor=f"#{color}#,30", **common)
             section(p+metric+"Graph", Meter="Line", LineCount=1,
@@ -244,21 +245,21 @@ def render(config, slots=None, shared=False):
         section(p+"DiskPie", Meter="Roundline", MeasureName=p+"Disk", X=px(739), Y=px(y+6), W=px(32), H=px(32),
                 StartAngle="(Rad(270))", RotationAngle="(Rad(360))", LineStart=0, LineLength=px(15),
                 Solid=1, LineColor="#DiskColor#", AntiAlias=1, UpdateDivider=1, Group=group, Hidden=1,
-                DynamicVariables=1, ToolTipText=f"Занято: [{p}DiskUsed] / [{p}DiskTotal] GB ([{p}Disk:0]%)")
+                DynamicVariables=1, ToolTipText=f"Used: [{p}DiskUsed] / [{p}DiskTotal] GB ([{p}Disk:0]%)")
         # I/O is throughput, not disk-space percentage: use an autoscaled sum.
         disk_graph = dict(MeasureName=p+"DiskTotalIO", X=px(553), Y=px(y+24), W=px(134), H=px(36),
-                          AutoScale=1, AntiAlias=1, UpdateDivider=1, Group=group, Hidden=1)
+                          AutoScale=1, AntiAlias=1, UpdateDivider=graph_update_divider, Group=group, Hidden=1)
         section(p+"DiskIOGraphFill", Meter="Histogram", PrimaryColor="#DiskColor#,30", **disk_graph)
         section(p+"DiskIOGraph", Meter="Line", LineCount=1, LineColor="#DiskColor#", LineWidth=1,
                 DynamicVariables=1,
-                ToolTipText=f"Чтение + запись: [{p}DiskTotalIO:1] MB/s (автомасштаб)", **disk_graph)
+                ToolTipText=f"Read + write: [{p}DiskTotalIO:1] MB/s (autoscale)", **disk_graph)
         section(p+"DiskIOGraphFrame", Meter="Shape", UpdateDivider=-1, Group=group, Hidden=1,
                 Shape=f"Rectangle {px(552)},{px(y+23)},{px(136)},{px(38)} | Fill Color 0,0,0,0 | Stroke Color #DiskColor# | StrokeWidth 1")
     for i in range(configured+1, row_count+1):
         y = row_y(i)
         section(f"VM{i}EmptySeparator", Meter="Shape", UpdateDivider=-1,
                 Shape=f"Line {px(14)},{px(y-2)},{px(panel_width-14)},{px(y-2)} | Stroke Color 255,255,255,22 | StrokeWidth 1")
-        text(f"VM{i}Empty", f"{i:02d} · не настроено", 24, y+12, 710, FontColor="130,130,130")
+        text(f"VM{i}Empty", f"{i:02d} · not configured", 24, y+12, 710, FontColor="130,130,130")
     return "; Generated by @Resources/Aggregate/generate.py. Edit servers.json, not this file.\n\n" + "\n".join(lines)
 
 
