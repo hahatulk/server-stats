@@ -1,6 +1,6 @@
 # ServerStats
 
-Lightweight monitoring for Windows and Linux VMs: CPU, RAM, network traffic, disk capacity, and read/write throughput. A compact Rainmeter dashboard displays live values, graphs, and warnings at 80% CPU/RAM/disk usage.
+Lightweight monitoring for Windows and Linux VMs: CPU, RAM, network traffic, disk capacity, and read/write throughput. A Rainmeter dashboard displays live values, graphs, and warnings at 80% CPU/RAM/disk usage. The dashboard uses a wide, dark-blue card for each VM, with four colored history charts and a disk-usage ring.
 
 ## Architecture
 
@@ -58,6 +58,8 @@ Optional settings: `SERVER_STATS_HOST`, `SERVER_STATS_PORT`, `SERVER_STATS_DISK`
 4. Run `rebuild_aggregate.cmd` in the installed `ServerStats` folder.
 5. Refresh Rainmeter and load `ServerStats → Aggregate → Aggregate-10.ini` (or another 01–20 variant). `Aggregate.ini` sizes automatically. At 11+ slots, the dashboard uses two columns.
 
+**Appearance:** The screenshot-style design is always used, without any `layout` setting. Every server card is **820 × 100 px** at `scale: 1.0`; use `scale` (0.6–2.0) to resize. At default scale, 10 rows are 1000 px high and two columns occupy 1656 px, fitting a 1920×1080 Full HD display. Cards show the configured friendly name, agent hostname, online status, CPU and RAM graphs, separate download/upload and disk read/write lines, and the disk-space ring. The title remains configurable but is not shown in the headerless layout. Right-click the Rainmeter skin to edit the list or rebuild.
+
 Edit JSON, not generated INI files. Keep your existing `servers.json` when updating. The original single-machine skin remains available.
 
 ## Test the demo
@@ -94,7 +96,7 @@ Demo mode returns **synthetic metrics** without stressing the machine or changin
    | `80` | 80% | 80.0 Mbit/s | R 80.0 W 80.0 MB/s | Red CPU/RAM and disk indicators |
    | `100` | 100% | 100.0 Mbit/s | R 100.0 W 100.0 MB/s | Red CPU/RAM and disk indicators |
 
-   Demo RAM totals 16.0 GB and disk capacity totals 256.0 GB. For `80`, the displayed values are `12.8 / 16.0 GB (80%)` and `204.8 / 256.0 GB`. The I/O graph shows **read + write**, so its value is 160.0 MB/s at `80`; it remains green even when disk-capacity warnings are red. Disk usage percentage is represented by the pie chart, not separate numeric text.
+   Demo RAM totals 16.0 GB and disk capacity totals 256.0 GB. For `80`, the displayed values are `12.8 / 16.0 GB (80%)` and `204.8 / 256.0 GB`. The I/O graph shows **read and write as separate green/cyan lines** (80.0 MB/s each for the `80` demo). Disk-space percentage is displayed inside the ring.
 
    Graphs refresh every 2 seconds with this configuration. Values are constant, so lines become horizontal after history fills. These presets test formatting and warnings, **not real performance or changing-load behavior**.
 
